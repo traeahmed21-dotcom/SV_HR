@@ -235,3 +235,47 @@ class WorkflowData {
     );
   }
 }
+
+class CompanyHoliday {
+  final int holidayId;
+  final String holidayName;
+  final DateTime fromDate;
+  final DateTime toDate;
+  final String scopeType;
+  final int? scopeDepartmentId;
+  final String? scopeDepartmentName;
+  final String? notes;
+
+  CompanyHoliday({
+    required this.holidayId,
+    required this.holidayName,
+    required this.fromDate,
+    required this.toDate,
+    required this.scopeType,
+    required this.scopeDepartmentId,
+    required this.scopeDepartmentName,
+    required this.notes,
+  });
+
+  factory CompanyHoliday.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(dynamic v) {
+      if (v == null) return DateTime.fromMillisecondsSinceEpoch(0);
+      if (v is DateTime) return v;
+      final s = v.toString().trim();
+      return DateTime.tryParse(s) ?? DateTime.fromMillisecondsSinceEpoch(0);
+    }
+
+    return CompanyHoliday(
+      holidayId: json['HolidayID'] ?? 0,
+      holidayName: (json['HolidayName'] ?? '').toString(),
+      fromDate: parseDate(json['FromDate']),
+      toDate: parseDate(json['ToDate']),
+      scopeType: (json['ScopeType'] ?? '').toString(),
+      scopeDepartmentId: json['ScopeDepartmentID'] is int
+          ? json['ScopeDepartmentID'] as int
+          : int.tryParse((json['ScopeDepartmentID'] ?? '').toString()),
+      scopeDepartmentName: json['ScopeDepartmentName']?.toString(),
+      notes: json['Notes']?.toString(),
+    );
+  }
+}

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/employee.dart';
@@ -54,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
   List<String> expiryNotifications = [];
   EmployeeFullInfo? employeeFullInfo;
   List<ShiftData> _shifts = [];
+  List<api_models.CompanyHoliday> _companyHolidays = [];
   DateTime _calendarMonth = DateTime(DateTime.now().year, DateTime.now().month);
 
   // Dashboard Data
@@ -141,6 +143,13 @@ class _HomeScreenState extends State<HomeScreen> {
       final email = widget.employeeData!.email;
       final rules = (widget.employeeData?.rules ?? '').toLowerCase();
       final creatorIdForApi = int.tryParse(employeeNumber) ?? empId;
+      final month = _calendarMonth;
+      final monthFrom = DateTime(month.year, month.month, 1);
+      final monthTo = DateTime(
+        month.year,
+        month.month,
+        DateUtils.getDaysInMonth(month.year, month.month),
+      );
 
       var effectivePermission = ApprovalPermissionService.currentCached;
       final embeddedFromEmployee = widget.employeeData?.embeddedApprovalPermission;
@@ -256,6 +265,15 @@ class _HomeScreenState extends State<HomeScreen> {
         }).catchError((e) {
           _log('Error fetching tasks count: $e');
           return 0;
+        }),
+        ApiService.getCompanyHolidaysInRange(
+          clientId,
+          employeeId: empId,
+          fromDate: monthFrom,
+          toDate: monthTo,
+        ).catchError((e) {
+          _log('Error fetching company holidays: $e');
+          return <api_models.CompanyHoliday>[];
         }),
       ]);
 
@@ -385,6 +403,9 @@ class _HomeScreenState extends State<HomeScreen> {
             (results[8] as List).whereType<MobileAdvertisement>().toList();
         final notices = (results[9] as List).whereType<AppNotice>().toList();
         _homeNotice = notices.isNotEmpty ? notices.first : null;
+        _companyHolidays = (results[11] as List)
+            .whereType<api_models.CompanyHoliday>()
+            .toList();
 
         _isLoadingDashboard = false;
       });
@@ -1634,6 +1655,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           _calendarMonth =
                               DateTime(_calendarMonth.year, _calendarMonth.month - 1);
                         });
+                        _reloadCompanyHolidaysForMonth();
                       },
                       icon: const Icon(Icons.chevron_left, size: 22),
                       style: IconButton.styleFrom(
@@ -1657,6 +1679,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           _calendarMonth =
                               DateTime(_calendarMonth.year, _calendarMonth.month + 1);
                         });
+                        _reloadCompanyHolidaysForMonth();
                       },
                       icon: const Icon(Icons.chevron_right, size: 22),
                       style: IconButton.styleFrom(
@@ -1715,9 +1738,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             final idx = entry.key;
                             final isFirst = idx == 0;
                             final isLast = idx == headers.length - 1;
-                            final isFriday = idx == 5;
-                            final isSaturday = idx == 6;
-                            final isWeekendHeader = isFriday || isSaturday;
                             return Expanded(
                               child: Container(
                                 padding: const EdgeInsets.symmetric(vertical: 7),
@@ -1733,26 +1753,14 @@ class _HomeScreenState extends State<HomeScreen> {
                                   gradient: LinearGradient(
                                     begin: Alignment.topCenter,
                                     end: Alignment.bottomCenter,
-                                    colors: isWeekendHeader
-                                        ? [
-                                            scheme.error
-                                                .withValues(alpha: 0.18),
-                                            scheme.error
-                                                .withValues(alpha: 0.08),
-                                          ]
-                                        : [
-                                            scheme.primary
-                                                .withValues(alpha: 0.14),
-                                            scheme.primaryContainer
-                                                .withValues(alpha: 0.10),
-                                          ],
+                                    colors: [
+                                      scheme.primary.withValues(alpha: 0.14),
+                                      scheme.primaryContainer.withValues(alpha: 0.10),
+                                    ],
                                   ),
                                   border: Border(
                                     bottom: BorderSide(
-                                      color: isWeekendHeader
-                                          ? scheme.error.withValues(alpha: 0.35)
-                                          : scheme.primary
-                                              .withValues(alpha: 0.25),
+                                      color: scheme.primary.withValues(alpha: 0.25),
                                       width: 2,
                                     ),
                                   ),
@@ -1762,9 +1770,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                     entry.value,
                                     style: TextStyle(
                                       fontWeight: FontWeight.w900,
-                                      color: isWeekendHeader
-                                          ? scheme.error.withValues(alpha: 0.92)
-                                          : scheme.primary.withValues(alpha: 0.92),
+                                      color: scheme.primary.withValues(alpha: 0.92),
                                       fontSize: 12.5,
                                       letterSpacing: 0.4,
                                       height: 1.15,
@@ -1823,7 +1829,10 @@ class _HomeScreenState extends State<HomeScreen> {
                             final date =
                                 DateTime(month.year, month.month, dayNumber);
                             final isToday = DateUtils.isSameDay(date, now);
-                            final isWorking = _isWorkingDate(date);
+                            final shiftWorking = _isWorkingDate(date);
+                            final holidays = _companyHolidaysForDate(date);
+                            final isWorking =
+                                holidays.isNotEmpty ? false : shiftWorking;
                             final weekday = (date.weekday % 7);
                             final isWeekend = weekday == 5 || weekday == 6;
 
@@ -1833,6 +1842,12 @@ class _HomeScreenState extends State<HomeScreen> {
                               isToday: isToday,
                               isWorking: isWorking,
                               isWeekend: isWeekend,
+                              onTap: () => _showCalendarDayDetails(
+                                lang: lang,
+                                date: date,
+                                isWorking: isWorking,
+                                holidays: holidays,
+                              ),
                               workBg: workBg,
                               offBg: offBg,
                               unknownBg: unknownBg,
@@ -1922,6 +1937,137 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return null;
+  }
+
+  List<api_models.CompanyHoliday> _companyHolidaysForDate(DateTime date) {
+    if (_companyHolidays.isEmpty) return const [];
+    final day = DateTime(date.year, date.month, date.day);
+    final matches = <api_models.CompanyHoliday>[];
+    for (final h in _companyHolidays) {
+      final from = DateTime(h.fromDate.year, h.fromDate.month, h.fromDate.day);
+      final to = DateTime(h.toDate.year, h.toDate.month, h.toDate.day);
+      if (!day.isBefore(from) && !day.isAfter(to)) {
+        matches.add(h);
+      }
+    }
+    return matches;
+  }
+
+  Future<void> _reloadCompanyHolidaysForMonth() async {
+    if (widget.employeeData == null) return;
+    final clientId = widget.employeeData!.clientID;
+    final empId = widget.employeeData!.employeeID;
+    final month = _calendarMonth;
+    final fromDate = DateTime(month.year, month.month, 1);
+    final toDate = DateTime(
+      month.year,
+      month.month,
+      DateUtils.getDaysInMonth(month.year, month.month),
+    );
+
+    final list = await ApiService.getCompanyHolidaysInRange(
+      clientId,
+      employeeId: empId,
+      fromDate: fromDate,
+      toDate: toDate,
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _companyHolidays = list;
+    });
+  }
+
+  void _showCalendarDayDetails({
+    required String lang,
+    required DateTime date,
+    required bool? isWorking,
+    required List<api_models.CompanyHoliday> holidays,
+  }) {
+    final scheme = Theme.of(context).colorScheme;
+    final locale = lang == 'ar' ? 'ar' : 'en';
+    final df = DateFormat('yyyy-MM-dd', locale);
+    final dateText = df.format(date);
+
+    final title = lang == 'ar' ? 'تفاصيل اليوم' : 'Day details';
+    final officialHolidayLabel =
+        lang == 'ar' ? 'إجازة رسمية' : 'Official holiday';
+    final holidayLabel = lang == 'ar' ? 'الإجازة' : 'Holiday';
+
+    final statusText = holidays.isNotEmpty
+        ? officialHolidayLabel
+        : (isWorking == null
+            ? Translations.getText('unknown', lang)
+            : (isWorking
+                ? Translations.getText('status_working', lang)
+                : Translations.getText('status_holiday', lang)));
+
+    showModalBottomSheet(
+      context: context,
+      showDragHandle: true,
+      backgroundColor: scheme.surface,
+      builder: (context) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 10, 20, 22),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: Theme.of(context)
+                      .textTheme
+                      .titleLarge
+                      ?.copyWith(fontWeight: FontWeight.w900),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  '$dateText • $statusText',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        fontWeight: FontWeight.w700,
+                      ),
+                ),
+                if (holidays.isNotEmpty) ...[
+                  const SizedBox(height: 14),
+                  for (final h in holidays) ...[
+                    Text(
+                      '$holidayLabel: ${h.holidayName}',
+                      style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                            fontWeight: FontWeight.w800,
+                            color: scheme.onSurface,
+                          ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${df.format(h.fromDate)} → ${df.format(h.toDate)}',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w600,
+                          ),
+                    ),
+                    if ((h.scopeDepartmentName ?? '').trim().isNotEmpty) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        lang == 'ar'
+                            ? 'القسم: ${h.scopeDepartmentName}'
+                            : 'Department: ${h.scopeDepartmentName}',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ],
+                    const SizedBox(height: 10),
+                  ],
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   int _mapDateToShiftDayNumber(DateTime date, int? sundayNumber) {
@@ -2664,6 +2810,7 @@ class _CalendarDayCell extends StatefulWidget {
   final bool isToday;
   final bool? isWorking;
   final bool isWeekend;
+  final VoidCallback? onTap;
   final Color workBg;
   final Color offBg;
   final Color unknownBg;
@@ -2686,6 +2833,7 @@ class _CalendarDayCell extends StatefulWidget {
     required this.isToday,
     required this.isWorking,
     required this.isWeekend,
+    required this.onTap,
     required this.workBg,
     required this.offBg,
     required this.unknownBg,
@@ -2732,6 +2880,7 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: GestureDetector(
+        onTap: widget.onTap,
         onTapDown: (_) => setState(() => _isPressed = true),
         onTapUp: (_) => setState(() => _isPressed = false),
         onTapCancel: () => setState(() => _isPressed = false),

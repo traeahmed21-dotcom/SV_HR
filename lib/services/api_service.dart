@@ -1989,6 +1989,61 @@ class ApiService {
     }
   }
 
+  static Future<List<api_models.CompanyHoliday>> getCompanyHolidaysInRange(
+    int clientId, {
+    required int employeeId,
+    required DateTime fromDate,
+    required DateTime toDate,
+  }) async {
+    String fmt(DateTime d) {
+      final y = d.year.toString().padLeft(4, '0');
+      final m = d.month.toString().padLeft(2, '0');
+      final day = d.day.toString().padLeft(2, '0');
+      return '$y-$m-$day';
+    }
+
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/$clientId/company-holidays')
+          .replace(queryParameters: {
+        'from': fmt(fromDate),
+        'to': fmt(toDate),
+        'employeeId': employeeId.toString(),
+      });
+      _log('🚀 جلب الإجازات الرسمية...');
+      _log('🔗 URL: $uri');
+
+      final response = await http
+          .get(
+            uri,
+            headers: ApiConfig.headers,
+          )
+          .timeout(const Duration(seconds: 25));
+
+      _log('📡 Response Status Code: ${response.statusCode}');
+
+      if (response.statusCode != 200) {
+        return [];
+      }
+
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        final data = decoded['Data'];
+        if (data is List) {
+          return data
+              .whereType<Map>()
+              .map((e) => api_models.CompanyHoliday.fromJson(
+                  Map<String, dynamic>.from(e)))
+              .toList();
+        }
+      }
+
+      return [];
+    } catch (e) {
+      _log('💥 خطأ في getCompanyHolidaysInRange: $e');
+      return [];
+    }
+  }
+
   // تغيير كلمة المرور
   Future<Map<String, dynamic>> changePassword({
     required int clientId,
@@ -2872,6 +2927,26 @@ class ApiService {
         };
       }
 
+      try {
+        final decoded = json.decode(response.body);
+        final msg = decoded is Map ? decoded['Message']?.toString() : null;
+        if (msg != null && msg.trim().isNotEmpty) {
+          return {
+            'Success': false,
+            'Message': msg.trim(),
+            'Data': [],
+          };
+        }
+      } catch (_) {}
+
+      if (response.statusCode == 404) {
+        return {
+          'Success': false,
+          'Message': 'الخدمة غير متوفرة على السيرفر (تحتاج تحديث الـ API): /task-groups',
+          'Data': [],
+        };
+      }
+
       return {
         'Success': false,
         'Message': 'فشل في جلب المهام: ${response.statusCode}',
@@ -3176,6 +3251,147 @@ class ApiService {
         'Message': 'خطأ في الاتصال: $e',
         'Data': [],
       };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getCreatorTaskGroups(
+    int clientId, {
+    required int creatorEmployeeId,
+    String? status,
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    try {
+      final qs = <String, String>{
+        'page': page.toString(),
+        'pageSize': pageSize.toString(),
+      };
+      if (status != null && status.trim().isNotEmpty) {
+        qs['status'] = status.trim();
+      }
+
+      final uri = Uri.parse(
+              '${ApiConfig.baseUrl}/api/$clientId/task-creators/$creatorEmployeeId/task-groups')
+          .replace(queryParameters: qs);
+
+      final response = await http.get(
+        uri,
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        return {
+          'Success': decoded['Success'] == true,
+          'Message': decoded['Message']?.toString(),
+          'Data': decoded['Data'] ?? [],
+        };
+      }
+
+      return {
+        'Success': false,
+        'Message': 'فشل في جلب المهام: ${response.statusCode}',
+        'Data': [],
+      };
+    } catch (e) {
+      return {
+        'Success': false,
+        'Message': 'خطأ في الاتصال: $e',
+        'Data': [],
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getCreatorTaskGroupDetails(
+    int clientId, {
+    required int creatorEmployeeId,
+    required int taskGroupId,
+  }) async {
+    try {
+      final uri = Uri.parse(
+          '${ApiConfig.baseUrl}/api/$clientId/task-creators/$creatorEmployeeId/task-groups/$taskGroupId');
+
+      final response = await http.get(
+        uri,
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        return {
+          'Success': decoded['Success'] == true,
+          'Message': decoded['Message']?.toString(),
+          'Data': decoded['Data'],
+        };
+      }
+
+      return {
+        'Success': false,
+        'Message': 'فشل في جلب التفاصيل: ${response.statusCode}',
+        'Data': null,
+      };
+    } catch (e) {
+      return {
+        'Success': false,
+        'Message': 'خطأ في الاتصال: $e',
+        'Data': null,
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> approveCreatorTaskGroup(
+    int clientId, {
+    required int creatorEmployeeId,
+    required int taskGroupId,
+  }) async {
+    try {
+      final uri = Uri.parse(
+          '${ApiConfig.baseUrl}/api/$clientId/task-creators/$creatorEmployeeId/task-groups/$taskGroupId/approve');
+
+      final response = await http.put(
+        uri,
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        return {
+          'Success': decoded['Success'] == true,
+          'Message': decoded['Message']?.toString(),
+        };
+      }
+
+      return {'Success': false, 'Message': 'فشل في اعتماد المهمة: ${response.statusCode}'};
+    } catch (e) {
+      return {'Success': false, 'Message': 'خطأ في الاتصال: $e'};
+    }
+  }
+
+  static Future<Map<String, dynamic>> cancelCreatorTaskGroup(
+    int clientId, {
+    required int creatorEmployeeId,
+    required int taskGroupId,
+  }) async {
+    try {
+      final uri = Uri.parse(
+          '${ApiConfig.baseUrl}/api/$clientId/task-creators/$creatorEmployeeId/task-groups/$taskGroupId/cancel');
+
+      final response = await http.put(
+        uri,
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        return {
+          'Success': decoded['Success'] == true,
+          'Message': decoded['Message']?.toString(),
+        };
+      }
+
+      return {'Success': false, 'Message': 'فشل في إلغاء المهمة: ${response.statusCode}'};
+    } catch (e) {
+      return {'Success': false, 'Message': 'خطأ في الاتصال: $e'};
     }
   }
 

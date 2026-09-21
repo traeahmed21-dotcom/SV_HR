@@ -730,8 +730,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
     final lang = languageService.currentLocale.languageCode;
 
     final selectedMethod = widget.authenticationMethod?.toUpperCase();
-    final requestUsesFace =
-        selectedMethod == 'FACE' || widget.authenticationMethod == 'الوجه';
+    bool requestUsesFace = false;
 
     if (_currentPosition == null) {
       _showError(Translations.getText('cannot_determine_location', lang),
@@ -750,7 +749,55 @@ class _AttendanceScreenState extends State<AttendanceScreen>
       bool hasStoredFace = false;
       Map<String, dynamic> faceStatus = <String, dynamic>{};
 
-      if (requestUsesFace) {
+      if (selectedMethod != null && selectedMethod.isNotEmpty) {
+        requestUsesFace =
+            selectedMethod == 'FACE' || widget.authenticationMethod == 'الوجه';
+      } else {
+        setState(() {
+          _currentStep = 'جاري تحديد طريقة التحضير...';
+        });
+
+        faceStatus = await FaceApiService.getEmployeeFaceImageStatus(
+          widget.clientId,
+          widget.employeeNumber,
+        );
+        // #region debug-point D:face-status
+        unawaited(_reportDebugEvent(
+          'D',
+          'attendance_screen.dart:_processAttendance',
+          'Fetched face status before attendance',
+          data: {
+            'success': faceStatus['Success'],
+            'attendanceMethod': faceStatus['AttendanceMethod'],
+            'isFaceRequired': faceStatus['IsFaceRequired'],
+            'hasFaceTemplate': faceStatus['HasFaceTemplate'],
+            'hasFaceImage': faceStatus['HasFaceImage'],
+            'hasImage': faceStatus['HasImage'],
+            'isRegistered': faceStatus['IsRegistered'],
+            'message': faceStatus['Message'],
+          },
+        ));
+        // #endregion
+
+        if (faceStatus['Success'] != true) {
+          _showError(
+            'تعذر تحديد طريقة التحضير',
+            faceStatus['Message'] ?? 'لا يمكن الاتصال بسيرفر البصمة حالياً',
+          );
+          setState(() {
+            _isProcessing = false;
+          });
+          return;
+        }
+
+        final attendanceMethod =
+            int.tryParse(faceStatus['AttendanceMethod']?.toString() ?? '0') ?? 0;
+        final isFaceRequired = faceStatus['IsFaceRequired'] == true;
+        requestUsesFace =
+            isFaceRequired || attendanceMethod == 1 || attendanceMethod == 2;
+      }
+
+      if (requestUsesFace && faceStatus.isEmpty) {
         setState(() {
           _currentStep = 'جاري التحقق من إعدادات الوجه...';
         });
@@ -786,6 +833,13 @@ class _AttendanceScreenState extends State<AttendanceScreen>
           return;
         }
 
+        hasStoredFace = faceStatus['HasFaceTemplate'] == true ||
+            faceStatus['HasFaceImage'] == true ||
+            faceStatus['HasImage'] == true ||
+            faceStatus['IsRegistered'] == true;
+      }
+
+      if (requestUsesFace && faceStatus.isNotEmpty) {
         hasStoredFace = faceStatus['HasFaceTemplate'] == true ||
             faceStatus['HasFaceImage'] == true ||
             faceStatus['HasImage'] == true ||

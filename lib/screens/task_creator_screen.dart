@@ -5,12 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:file_picker/file_picker.dart';
 import '../models/managed_employee.dart';
-import '../models/user_task.dart';
+import '../models/task_group.dart';
 import '../config/api_config.dart';
 import '../services/api_service.dart';
 import '../services/language_service.dart';
 import '../services/translations.dart';
 import '../theme/app_semantic_colors.dart';
+import 'task_group_details_screen.dart';
 
 class TaskCreatorScreen extends StatefulWidget {
   final int clientId;
@@ -30,6 +31,7 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
   bool _isLoading = false;
   bool _isSubmitting = false;
   bool _isLoadingTasks = false;
+  String? _tasksLoadError;
 
   List<ManagedEmployee> _managedEmployees = const [];
   Set<int> _selectedEmployeeIds = <int>{};
@@ -47,10 +49,10 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
   bool _autoApprove = true;
 
   String _tasksFilter = 'All';
-  List<UserTask> _allCreatedTasks = const [];
-  List<UserTask> _createdTasks = const [];
+  List<TaskGroupSummary> _allCreatedTaskGroups = const [];
+  List<TaskGroupSummary> _createdTaskGroups = const [];
 
-  Map<String, int> _taskStats(List<UserTask> tasks) {
+  Map<String, int> _taskStats(List<TaskGroupSummary> groups) {
     final map = <String, int>{
       'Total': 0,
       'Pending': 0,
@@ -59,12 +61,13 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
       'Completed': 0,
       'Cancelled': 0,
     };
-    for (final t in tasks) {
-      map['Total'] = (map['Total'] ?? 0) + 1;
-      final s = (t.status).trim();
-      if (map.containsKey(s)) {
-        map[s] = (map[s] ?? 0) + 1;
-      }
+    for (final g in groups) {
+      map['Total'] = (map['Total'] ?? 0) + g.totalEmployees;
+      map['Pending'] = (map['Pending'] ?? 0) + g.pendingCount;
+      map['InProgress'] = (map['InProgress'] ?? 0) + g.inProgressCount;
+      map['AwaitingApproval'] = (map['AwaitingApproval'] ?? 0) + g.awaitingApprovalCount;
+      map['Completed'] = (map['Completed'] ?? 0) + g.completedCount;
+      map['Cancelled'] = (map['Cancelled'] ?? 0) + g.cancelledCount;
     }
     return map;
   }
@@ -202,7 +205,7 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
   Future<void> _loadCreatedTasks() async {
     setState(() => _isLoadingTasks = true);
     try {
-      final respAll = await ApiService.getCreatorTasks(
+      final respAll = await ApiService.getCreatorTaskGroups(
         widget.clientId,
         creatorEmployeeId: widget.creatorEmployeeId,
         status: null,
@@ -210,15 +213,16 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
         pageSize: 200,
       );
       final okAll = respAll['Success'] == true;
+      final msgAll = respAll['Message']?.toString();
       final dataAll = (respAll['Data'] as List?) ?? const [];
-      final allTasks = okAll
-          ? dataAll.whereType<Map<String, dynamic>>().map(UserTask.fromJson).toList()
-          : <UserTask>[];
+      final allGroups = okAll
+          ? dataAll.whereType<Map<String, dynamic>>().map(TaskGroupSummary.fromJson).toList()
+          : <TaskGroupSummary>[];
 
       final status = _tasksFilter == 'All' ? null : _tasksFilter;
       final resp = status == null
           ? respAll
-          : await ApiService.getCreatorTasks(
+          : await ApiService.getCreatorTaskGroups(
         widget.clientId,
         creatorEmployeeId: widget.creatorEmployeeId,
         status: status,
@@ -226,16 +230,23 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
         pageSize: 100,
       );
       final ok = resp['Success'] == true;
+      final msg = resp['Message']?.toString();
       final data = (resp['Data'] as List?) ?? const [];
-      final tasks = ok
-          ? data.whereType<Map<String, dynamic>>().map(UserTask.fromJson).toList()
-          : <UserTask>[];
+      final groups = ok
+          ? data.whereType<Map<String, dynamic>>().map(TaskGroupSummary.fromJson).toList()
+          : <TaskGroupSummary>[];
 
       if (!mounted) return;
       setState(() {
-        _allCreatedTasks = allTasks;
-        _createdTasks = tasks;
+        _allCreatedTaskGroups = allGroups;
+        _createdTaskGroups = groups;
+        _tasksLoadError = okAll && ok ? null : (msg ?? msgAll);
       });
+
+      if ((!okAll || !ok) && mounted) {
+        final text = (_tasksLoadError ?? '').trim().isEmpty ? 'تعذر تحميل المهام' : _tasksLoadError!.trim();
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+      }
     } finally {
       if (mounted) setState(() => _isLoadingTasks = false);
     }
@@ -484,14 +495,14 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
     }
   }
 
-  Future<void> _approveTask(int taskId) async {
+  Future<void> _approveTaskGroup(int taskGroupId) async {
     if (!_canApprove) return;
     setState(() => _isSubmitting = true);
     try {
-      final resp = await ApiService.approveCreatorTask(
+      final resp = await ApiService.approveCreatorTaskGroup(
         widget.clientId,
         creatorEmployeeId: widget.creatorEmployeeId,
-        taskId: taskId,
+        taskGroupId: taskGroupId,
       );
       if (!mounted) return;
       final ok = resp['Success'] == true;
@@ -503,14 +514,14 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
     }
   }
 
-  Future<void> _cancelTask(int taskId) async {
+  Future<void> _cancelTaskGroup(int taskGroupId) async {
     if (!_canDelete) return;
     setState(() => _isSubmitting = true);
     try {
-      final resp = await ApiService.cancelCreatorTask(
+      final resp = await ApiService.cancelCreatorTaskGroup(
         widget.clientId,
         creatorEmployeeId: widget.creatorEmployeeId,
-        taskId: taskId,
+        taskGroupId: taskGroupId,
       );
       if (!mounted) return;
       final ok = resp['Success'] == true;
@@ -534,6 +545,8 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
         return Translations.getText('tasks_status_completed', lang);
       case 'Cancelled':
         return Translations.getText('cancelled', lang);
+      case 'Mixed':
+        return lang == 'ar' ? 'متعددة الحالات' : 'Mixed';
       default:
         return status;
     }
@@ -655,7 +668,8 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
                   children: [
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        final statsSource = _allCreatedTasks.isNotEmpty ? _allCreatedTasks : _createdTasks;
+                        final statsSource =
+                            _allCreatedTaskGroups.isNotEmpty ? _allCreatedTaskGroups : _createdTaskGroups;
                         final stats = _taskStats(statsSource);
                         final cardWidth = (constraints.maxWidth - 12) / 2;
 
@@ -936,128 +950,219 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
                     const SizedBox(height: 10),
                     if (_isLoadingTasks)
                       const Center(child: CircularProgressIndicator())
-                    else if (_createdTasks.isEmpty)
+                    else if (_createdTaskGroups.isEmpty)
                       Padding(
                         padding: const EdgeInsets.symmetric(vertical: 18),
-                        child: Text(
-                          Translations.getText('tasks_empty', lang),
-                          textAlign: TextAlign.center,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyLarge
-                              ?.copyWith(color: scheme.onSurfaceVariant),
+                        child: Column(
+                          children: [
+                            Text(
+                              Translations.getText('tasks_empty', lang),
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .bodyLarge
+                                  ?.copyWith(color: scheme.onSurfaceVariant),
+                            ),
+                            if ((_tasksLoadError ?? '').trim().isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                _tasksLoadError!.trim(),
+                                textAlign: TextAlign.center,
+                                style: Theme.of(context)
+                                    .textTheme
+                                    .bodySmall
+                                    ?.copyWith(color: scheme.error),
+                              ),
+                            ],
+                          ],
                         ),
                       )
                     else
-                      for (final t in _createdTasks) ...[
-                        Container(
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: scheme.surface,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Builder(
-                                builder: (context) {
-                                  final statusColor = _statusColor(scheme, semantic, t.status);
-                                  return Row(
-                                    children: [
-                                      Expanded(
-                                        child: Text(
-                                          t.title,
-                                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                                fontWeight: FontWeight.w800,
-                                              ),
-                                        ),
+                      for (final g in _createdTaskGroups) ...[
+                        Builder(
+                          builder: (context) {
+                            final statusColor = _statusColor(scheme, semantic, g.status);
+                            final canApprove = _canApprove && g.awaitingApprovalCount > 0;
+                            final canCancel = _canDelete && g.status != 'Completed' && g.status != 'Cancelled';
+
+                            Widget countChip(String label, int value, Color color) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.10),
+                                  borderRadius: BorderRadius.circular(999),
+                                  border: Border.all(color: color.withValues(alpha: 0.22)),
+                                ),
+                                child: Text(
+                                  '$label: $value',
+                                  style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: color,
                                       ),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                          horizontal: 10,
-                                          vertical: 6,
-                                        ),
-                                        decoration: BoxDecoration(
-                                          color: statusColor.withValues(alpha: 0.12),
-                                          borderRadius: BorderRadius.circular(999),
-                                          border: Border.all(
-                                            color: statusColor.withValues(alpha: 0.35),
-                                          ),
-                                        ),
-                                        child: Text(
-                                          _statusLabel(lang, t.status),
-                                          style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                                                fontWeight: FontWeight.w700,
-                                                color: statusColor,
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                t.employeeName ?? '-',
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(color: scheme.onSurfaceVariant),
-                              ),
-                              const SizedBox(height: 6),
-                              Row(
-                                children: [
-                                  Icon(Icons.schedule_rounded, size: 18, color: scheme.onSurfaceVariant),
-                                  const SizedBox(width: 6),
-                                  Expanded(
-                                    child: Text(
-                                      t.dueDateTime ?? '-',
-                                      style: Theme.of(context)
-                                          .textTheme
-                                          .bodySmall
-                                          ?.copyWith(color: scheme.onSurfaceVariant),
+                                ),
+                              );
+                            }
+
+                            return InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () async {
+                                await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => TaskGroupDetailsScreen(
+                                      clientId: widget.clientId,
+                                      creatorEmployeeId: widget.creatorEmployeeId,
+                                      taskGroupId: g.taskGroupId,
+                                      canApprove: _canApprove,
+                                      canDelete: _canDelete,
                                     ),
                                   ),
-                                ],
-                              ),
-                              if (t.status == 'AwaitingApproval' && _canApprove) ...[
-                                const SizedBox(height: 12),
-                                Row(
+                                );
+                                if (!mounted) return;
+                                await _loadCreatedTasks();
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: scheme.surface,
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.6)),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Expanded(
-                                      child: FilledButton(
-                                        onPressed: _isSubmitting ? null : () => _approveTask(t.taskId),
-                                        style: FilledButton.styleFrom(
-                                          backgroundColor: semantic.success,
-                                          foregroundColor: Colors.white,
+                                    Row(
+                                      children: [
+                                        Expanded(
+                                          child: Text(
+                                            g.title,
+                                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                                                  fontWeight: FontWeight.w800,
+                                                ),
+                                          ),
                                         ),
-                                        child: Text(Translations.getText('task_creator_approve', lang)),
-                                      ),
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 10,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: statusColor.withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(999),
+                                            border: Border.all(
+                                              color: statusColor.withValues(alpha: 0.35),
+                                            ),
+                                          ),
+                                          child: Text(
+                                            _statusLabel(lang, g.status),
+                                            style: Theme.of(context).textTheme.labelMedium?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: statusColor,
+                                                ),
+                                          ),
+                                        ),
+                                      ],
                                     ),
-                                    if (_canDelete) ...[
-                                      const SizedBox(width: 10),
-                                      Expanded(
-                                        child: OutlinedButton(
-                                          onPressed: _isSubmitting ? null : () => _cancelTask(t.taskId),
-                                          child: Text(Translations.getText('task_creator_cancel', lang)),
+                                    const SizedBox(height: 8),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.group_rounded, size: 18, color: scheme.onSurfaceVariant),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            '${Translations.getText('task_creator_selected', lang)}: ${g.totalEmployees}',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodyMedium
+                                                ?.copyWith(color: scheme.onSurfaceVariant),
+                                          ),
                                         ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.schedule_rounded, size: 18, color: scheme.onSurfaceVariant),
+                                        const SizedBox(width: 6),
+                                        Expanded(
+                                          child: Text(
+                                            g.dueDateTime ?? '-',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .bodySmall
+                                                ?.copyWith(color: scheme.onSurfaceVariant),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 10),
+                                    Wrap(
+                                      spacing: 8,
+                                      runSpacing: 8,
+                                      children: [
+                                        if (g.completedCount > 0)
+                                          countChip(
+                                            Translations.getText('tasks_status_completed', lang),
+                                            g.completedCount,
+                                            semantic.success,
+                                          ),
+                                        if (g.awaitingApprovalCount > 0)
+                                          countChip(
+                                            Translations.getText('tasks_status_awaiting', lang),
+                                            g.awaitingApprovalCount,
+                                            semantic.warning,
+                                          ),
+                                        if (g.inProgressCount > 0)
+                                          countChip(
+                                            Translations.getText('tasks_status_inprogress', lang),
+                                            g.inProgressCount,
+                                            semantic.info,
+                                          ),
+                                        if (g.pendingCount > 0)
+                                          countChip(
+                                            Translations.getText('tasks_status_pending', lang),
+                                            g.pendingCount,
+                                            scheme.outline,
+                                          ),
+                                        if (g.cancelledCount > 0)
+                                          countChip(
+                                            Translations.getText('cancelled', lang),
+                                            g.cancelledCount,
+                                            scheme.error,
+                                          ),
+                                      ],
+                                    ),
+                                    if (canApprove || canCancel) ...[
+                                      const SizedBox(height: 12),
+                                      Row(
+                                        children: [
+                                          if (canApprove)
+                                            Expanded(
+                                              child: FilledButton(
+                                                onPressed: _isSubmitting ? null : () => _approveTaskGroup(g.taskGroupId),
+                                                style: FilledButton.styleFrom(
+                                                  backgroundColor: semantic.success,
+                                                  foregroundColor: Colors.white,
+                                                ),
+                                                child: Text(Translations.getText('task_creator_approve', lang)),
+                                              ),
+                                            ),
+                                          if (canApprove && canCancel) const SizedBox(width: 10),
+                                          if (canCancel)
+                                            Expanded(
+                                              child: OutlinedButton(
+                                                onPressed: _isSubmitting ? null : () => _cancelTaskGroup(g.taskGroupId),
+                                                child: Text(Translations.getText('task_creator_cancel', lang)),
+                                              ),
+                                            ),
+                                        ],
                                       ),
                                     ],
                                   ],
                                 ),
-                              ] else if (_canDelete && t.status != 'Completed' && t.status != 'Cancelled') ...[
-                                const SizedBox(height: 12),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: OutlinedButton(
-                                    onPressed: _isSubmitting ? null : () => _cancelTask(t.taskId),
-                                    child: Text(Translations.getText('task_creator_cancel', lang)),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
+                              ),
+                            );
+                          },
                         ),
                         const SizedBox(height: 12),
                       ],

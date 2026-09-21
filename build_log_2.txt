@@ -27,28 +27,28 @@ q Quit (terminate the application on the device).
 A Dart VM Service on Infinix X6725 is available at: http://127.0.0.1:59745/YnTKeR8buVw=/
 The Flutter DevTools debugger and profiler on Infinix X6725 is available at: http://127.0.0.1:59745/YnTKeR8buVw=/devtools/?uri=ws://127.0.0.1:59745/YnTKeR8buVw=/ws
 D/FdLeakLice(13063): FdLeakCheck app is not systemapp!!!
-I/flutter (13063): ✅ تم التأكد من عمل الرابط: http://linktek.dyndns.org:334/
+I/flutter (13063): ✅ تم التأكد من عمل الرابط: http://192.168.1.163:333/
 I/flutter (13063): 🚀 جلب معلومات الموظف الكاملة...
 I/flutter (13063): 👤 البريد الإلكتروني: alskafahmed720@gmail.com
 I/flutter (13063): 🏢 ClientID: 187
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/employee-full-info/187/get
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/employee-full-info/187/get
 I/flutter (13063): 📦 Request Body: {"Email":"alskafahmed720@gmail.com"}
 I/flutter (13063): 🚀 جلب الطلبات...
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/187/requests?page=1&pageSize=5&employeeId=1
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/187/requests?page=1&pageSize=5&employeeId=1
 I/flutter (13063): 🚀 جلب الطلبات المعلقة للموافقة...
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/187/approvals?approverId=1
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/187/approvals?approverId=1
 I/flutter (13063): 🚀 جلب الطلبات...
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/187/requests?page=1&pageSize=50&employeeId=1
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/187/requests?page=1&pageSize=50&employeeId=1
 I/flutter (13063): 🚀 جلب حالة الحضور للموظف...
 I/flutter (13063): 👤 EmployeeID: 1
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/187/attendance/status/1
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/187/attendance/status/1
 I/flutter (13063): 🚀 جلب سجل الحضور للموظف...
 I/flutter (13063): 👤 EmployeeNumber: 1
 I/flutter (13063): 🏢 ClientID: 187
 I/flutter (13063): 📅 التاريخ: 2026-03-08
 I/flutter (13063): 📅 التاريخ الكامل: 2026-03-08 15:22:23.759457
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/187/attendance/employee/1?date=2026-03-08
-I/flutter (13063): 🔗 Base URL: http://linktek.dyndns.org:334/
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/187/attendance/employee/1?date=2026-03-08
+I/flutter (13063): 🔗 Base URL: http://192.168.1.163:333/
 I/Choreographer(13063): Skipped 172 frames!  The application may be doing too much work on its main thread.
 D/ProfileInstaller(13063): Installing profile for com.perfectsolutions.mtzhr
 D/mali_gralloc(13063): register: id=4a1000128b3, handle=0xb400006f47306140, importpid=13063
@@ -91,24 +91,24 @@ D/TextSelection(13063): onUseCache cache=false
 I/flutter (13063): 🚀 جلب معلومات الموظف الكاملة...
 I/flutter (13063): 👤 البريد الإلكتروني: alskafahmed720@gmail.com
 I/flutter (13063): 🏢 ClientID: 187
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/employee-full-info/187/get
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/employee-full-info/187/get
 I/flutter (13063): 📦 Request Body: {"Email":"alskafahmed720@gmail.com"}
 I/flutter (13063): 🚀 جلب الطلبات...
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/187/requests?page=1&pageSize=5&employeeId=1
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/187/requests?page=1&pageSize=5&employeeId=1
 I/flutter (13063): 🚀 جلب الطلبات المعلقة للموافقة...
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/187/approvals?approverId=1
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/187/approvals?approverId=1
 I/flutter (13063): 🚀 جلب الطلبات...
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/187/requests?page=1&pageSize=50&employeeId=1
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/187/requests?page=1&pageSize=50&employeeId=1
 I/flutter (13063): 🚀 جلب حالة الحضور للموظف...
 I/flutter (13063): 👤 EmployeeID: 1
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/187/attendance/status/1
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/187/attendance/status/1
 I/flutter (13063): 🚀 جلب سجل الحضور للموظف...
 I/flutter (13063): 👤 EmployeeNumber: 1
 I/flutter (13063): 🏢 ClientID: 187
 I/flutter (13063): 📅 التاريخ: 2026-03-08
 I/flutter (13063): 📅 التاريخ الكامل: 2026-03-08 15:26:23.941791
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/187/attendance/employee/1?date=2026-03-08
-I/flutter (13063): 🔗 Base URL: http://linktek.dyndns.org:334/
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/187/attendance/employee/1?date=2026-03-08
+I/flutter (13063): 🔗 Base URL: http://192.168.1.163:333/
 I/flutter (13063): 📡 Response Status Code: 200
 I/flutter (13063): 📄 Response Body: {"Success":true,"Message":"تم جلب حالة الحضور بنجاح","Status":{"EmployeeNumber":"1","HasCheckedIn":false,"HasCheckedOut":false,"Status":"لم يسجل الحضور","LastUpdate":"2026-03-08T15:26:24.8051819+03:00"}}
 I/flutter (13063): ✅ تم جلب حالة الحضور بنجاح
@@ -168,7 +168,7 @@ D/TextSelection(13063): onUseCache cache=false
 I/flutter (13063): 🚀 جلب تفاصيل الراتب...
 I/flutter (13063): 👤 EmployeeID: 1
 I/flutter (13063): 📅 التاريخ: 3/2026
-I/flutter (13063): 🔗 URL: http://linktek.dyndns.org:334//api/187/payroll/details/1?month=3&year=2026
+I/flutter (13063): 🔗 URL: http://192.168.1.163:333//api/187/payroll/details/1?month=3&year=2026
 W/WindowOnBackDispatcher(13063): OnBackInvokedCallback is not enabled for the application.
 W/WindowOnBackDispatcher(13063): Set 'android:enableOnBackInvokedCallback="true"' in the application manifest.
 I/flutter (13063): 📡 Response Status Code: 200

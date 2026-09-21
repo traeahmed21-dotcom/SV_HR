@@ -10,14 +10,14 @@ class ApiConfig {
   static const String _debugSessionId = 'face-legacy-server';
   static const String _defaultBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://linktek.dyndns.org:334/',
+    defaultValue: 'http://192.168.1.163:333/',
   );
 
   // الرابط الأساسي للـ API - متغير
   static String _baseUrl = _defaultBaseUrl;
-  // static String _baseUrl = 'http://linktek.dyndns.org:334/';
+  // static String _baseUrl = 'http://192.168.1.163:333/';
   // static String _baseUrl =
-  // 'http://linktek.dyndns.org:334/'; // تم التغيير من localhost لدعم الهاتف الحقيقي
+  // 'http://192.168.1.163:333/'; // تم التغيير من localhost لدعم الهاتف الحقيقي
   // 'http://www.perfect-solutions.net:334/HR/API'; // تم التغيير من localhost لدعم الهاتف الحقيقي
   static bool _isInitialized = false;
 

@@ -86,6 +86,10 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen>
     } catch (_) {}
   }
   // #endregion
+  bool _isInitializingCamera = false;
+  int _cameraInitToken = 0;
+  bool _cameraInitRetryScheduled = false;
+  AppLifecycleState? _lastLifecycleState;
 
   CameraController? _controller;
   bool _isInitializing = true;
@@ -188,14 +192,26 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen>
     WidgetsBinding.instance.removeObserver(this);
     _stabilizationTimer?.cancel();
     _proactiveCaptureTimer?.cancel();
-    _controller?.stopImageStream();
-    _controller?.dispose();
+    _cameraInitToken++;
+    _isInitializingCamera = false;
+    _cameraInitRetryScheduled = false;
+    final controller = _controller;
+    _controller = null;
+    if (controller != null) {
+      try {
+        if (controller.value.isStreamingImages) {
+          unawaited(controller.stopImageStream().catchError((_) {}));
+        }
+      } catch (_) {}
+      unawaited(controller.dispose().catchError((_) {}));
+    }
     _faceDetector.close();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
+    _lastLifecycleState = state;
     unawaited(_handleAppLifecycleState(state));
   }
 
@@ -206,6 +222,9 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen>
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.hidden ||
         state == AppLifecycleState.detached) {
+      _cameraInitToken++;
+      _isInitializingCamera = false;
+      _cameraInitRetryScheduled = false;
       await _disposeCameraController(updateUi: mounted);
       return;
     }
@@ -632,7 +651,15 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen>
   // 🎥 تهيئة الكاميرا + معالجة الإطارات (بدون Liveness!)
   // =========================================================
   Future<void> _initializeCamera() async {
+    if (_isInitializingCamera) return;
+    _isInitializingCamera = true;
+    final token = ++_cameraInitToken;
+
     final cameras = await availableCameras();
+    if (!mounted || token != _cameraInitToken) {
+      _isInitializingCamera = false;
+      return;
+    }
     final frontCamera = cameras.firstWhere(
       (camera) => camera.lensDirection == CameraLensDirection.front,
       orElse: () => cameras.first,
@@ -669,7 +696,19 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen>
             formatGroup: attempt.format,
           );
           await trialController.initialize();
+          if (!mounted || token != _cameraInitToken) {
+            try {
+              await trialController.dispose();
+            } catch (_) {}
+            return;
+          }
           await _configureCameraController(trialController);
+          if (!mounted || token != _cameraInitToken) {
+            try {
+              await trialController.dispose();
+            } catch (_) {}
+            return;
+          }
           _controller = trialController;
           trialController = null;
           break;
@@ -685,6 +724,13 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen>
         throw lastError ?? Exception('تعذر تهيئة الكاميرا على هذا الجهاز.');
       }
 
+      if (!mounted || token != _cameraInitToken) {
+        await _disposeCameraController();
+        return;
+      }
+
+      _cameraInitRetryScheduled = false;
+
       if (mounted) {
         setState(() {
           _isInitializing = false;
@@ -692,6 +738,32 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen>
         await _startFrameStreaming();
       }
     } catch (e) {
+      if (token != _cameraInitToken) return;
+      final lower = e.toString().toLowerCase();
+      final isTransient = lower.contains('disposed') ||
+          lower.contains('not ready') ||
+          lower.contains('bad state') ||
+          (lower.contains('camera') && lower.contains('closed'));
+      final lifecycleOk = _lastLifecycleState == null ||
+          _lastLifecycleState == AppLifecycleState.resumed;
+      if (mounted && isTransient && lifecycleOk && !_cameraInitRetryScheduled) {
+        _cameraInitRetryScheduled = true;
+        final retryMessage = _lang() == 'ar'
+            ? 'جاري إعادة تشغيل الكاميرا...'
+            : 'Restarting camera...';
+        setState(() {
+          _isInitializing = false;
+          _statusMessage = retryMessage;
+          _poseHintMessage = '';
+        });
+        Future.delayed(const Duration(milliseconds: 450), () {
+          if (!mounted) return;
+          _cameraInitRetryScheduled = false;
+          unawaited(_initializeCamera());
+        });
+        return;
+      }
+
       final friendlyMessage = _friendlyCameraErrorMessage(e);
       if (mounted) {
         setState(() {
@@ -708,6 +780,8 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen>
         message: friendlyMessage,
         rawDetails: e.toString(),
       );
+    } finally {
+      _isInitializingCamera = false;
     }
   }
 
@@ -1616,12 +1690,29 @@ class _FaceEnrollmentScreenState extends State<FaceEnrollmentScreen>
       _currentDetectedFace = null;
       _isFaceCurrentlyDetected = false;
       _frameCounter = 0;
+      _noFaceGraceStreak = 0;
+      _lastValidFrameBytes = null;
+      _lastValidFrameSize = null;
+      _lastValidFrameRotation = null;
+      _lastValidFace = null;
+      _lastTelemetryFaceCount = -999;
+      _streamPausedForStillCapture = false;
       _captureCompleted = false;
       final lang = _lang();
       _statusMessage = Translations.getText('face_point_to_camera', lang);
       _poseHintMessage = '';
       _borderColor = Colors.blue.withOpacity(0.6);
     });
+
+    unawaited(() async {
+      if (!mounted) return;
+      final controller = _controller;
+      if (controller == null || !controller.value.isInitialized) {
+        await _initializeCamera();
+        return;
+      }
+      await _startFrameStreaming();
+    }());
   }
 
   // =========================================================
