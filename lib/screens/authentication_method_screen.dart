@@ -96,6 +96,7 @@ class _AuthenticationMethodScreenState
 
   @override
   Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -103,8 +104,6 @@ class _AuthenticationMethodScreenState
               ? 'اختر طريقة تسجيل الحضور'
               : 'اختر طريقة تسجيل الانصراف',
         ),
-        backgroundColor: const Color(0xFF0EA5E9),
-        foregroundColor: Colors.white,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -117,10 +116,11 @@ class _AuthenticationMethodScreenState
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0EA5E9).withOpacity(0.1),
+                      color: scheme.primaryContainer.withValues(alpha: 0.55),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                          color: const Color(0xFF0EA5E9).withOpacity(0.3)),
+                        color: scheme.primary.withValues(alpha: 0.22),
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -135,17 +135,17 @@ class _AuthenticationMethodScreenState
                         const SizedBox(height: 4),
                         Text(
                           'رقم الموظف: ${widget.employeeNumber}',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey,
+                            color: scheme.onSurfaceVariant,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           widget.isCheckIn ? 'تسجيل الحضور' : 'تسجيل الانصراف',
-                          style: const TextStyle(
+                          style: TextStyle(
                             fontSize: 14,
-                            color: Colors.grey,
+                            color: scheme.onSurfaceVariant,
                           ),
                         ),
                       ],
@@ -164,10 +164,10 @@ class _AuthenticationMethodScreenState
                     width: double.infinity,
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF16A34A).withOpacity(0.08),
+                      color: scheme.tertiaryContainer.withValues(alpha: 0.55),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color(0xFF16A34A).withOpacity(0.25),
+                        color: scheme.tertiary.withValues(alpha: 0.22),
                       ),
                     ),
                     child: const Text(
@@ -187,7 +187,7 @@ class _AuthenticationMethodScreenState
                           margin: const EdgeInsets.only(bottom: 12),
                           elevation: isSelected ? 4 : 2,
                           color: isSelected
-                              ? const Color(0xFF0EA5E9).withOpacity(0.1)
+                              ? scheme.primaryContainer.withValues(alpha: 0.55)
                               : null,
                           child: InkWell(
                             onTap: () {
@@ -203,8 +203,8 @@ class _AuthenticationMethodScreenState
                                     height: 50,
                                     decoration: BoxDecoration(
                                       color: isSelected
-                                          ? const Color(0xFF0EA5E9)
-                                          : Colors.grey.withOpacity(0.2),
+                                          ? scheme.primary
+                                          : scheme.surfaceContainerHighest,
                                       borderRadius: BorderRadius.circular(25),
                                     ),
                                     child: Center(
@@ -226,25 +226,25 @@ class _AuthenticationMethodScreenState
                                             fontSize: 16,
                                             fontWeight: FontWeight.bold,
                                             color: isSelected
-                                                ? const Color(0xFF0EA5E9)
+                                                ? scheme.primary
                                                 : null,
                                           ),
                                         ),
                                         const SizedBox(height: 4),
                                         Text(
                                           _getMethodDescription(method),
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 14,
-                                            color: Colors.grey,
+                                            color: scheme.onSurfaceVariant,
                                           ),
                                         ),
                                       ],
                                     ),
                                   ),
                                   if (isSelected)
-                                    const Icon(
+                                    Icon(
                                       Icons.check_circle,
-                                      color: Color(0xFF0EA5E9),
+                                      color: scheme.primary,
                                       size: 24,
                                     ),
                                 ],
@@ -264,8 +264,6 @@ class _AuthenticationMethodScreenState
                           ? () => _selectMethod('FACE')
                           : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF0EA5E9),
-                        foregroundColor: Colors.white,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16),
                         ),

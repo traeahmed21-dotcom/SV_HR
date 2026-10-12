@@ -208,12 +208,11 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   Widget build(BuildContext context) {
     final languageService = Provider.of<LanguageService>(context);
     final lang = languageService.currentLocale.languageCode;
+    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(Translations.getText('attendance_history', lang)),
-        backgroundColor: const Color(0xFF0EA5E9),
-        foregroundColor: Colors.white,
         elevation: 0,
         actions: [
           IconButton(
@@ -228,9 +227,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const CircularProgressIndicator(
-                    color: Color(0xFF0EA5E9),
-                  ),
+                  CircularProgressIndicator(color: scheme.primary),
                   const SizedBox(height: 16),
                   Text(
                     Translations.getText('loading', lang),
@@ -246,6 +243,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   }
 
   Widget _buildErrorWidget(String lang) {
+    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -263,7 +261,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
               style: TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
-                color: Colors.red.shade700,
+                color: scheme.error,
                 fontFamily: 'Tajawal',
               ),
             ),
@@ -273,7 +271,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey.shade600,
+                color: scheme.onSurfaceVariant,
                 fontFamily: 'Tajawal',
               ),
             ),
@@ -283,8 +281,6 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
               icon: const Icon(Icons.refresh),
               label: Text(Translations.getText('retry', lang)),
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0EA5E9),
-                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 24,
                   vertical: 12,
@@ -298,18 +294,19 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   }
 
   Widget _buildContent(String lang) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         // شريط التصفية والتاريخ
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: scheme.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.grey.withValues(alpha: 0.1),
+                color: scheme.shadow.withValues(alpha: 0.06),
                 spreadRadius: 1,
-                blurRadius: 5,
+                blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -325,14 +322,14 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.grey.shade300),
+                          border: Border.all(color: scheme.outlineVariant),
                           borderRadius: BorderRadius.circular(8),
                         ),
                         child: Row(
                           children: [
                             Icon(
                               Icons.calendar_today,
-                              color: Colors.grey.shade600,
+                              color: scheme.onSurfaceVariant,
                               size: 20,
                             ),
                             const SizedBox(width: 8),
@@ -340,14 +337,14 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                               DateFormat('yyyy/MM/dd').format(_selectedDate),
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey.shade800,
+                                color: scheme.onSurface,
                                 fontFamily: 'Tajawal',
                               ),
                             ),
                             const Spacer(),
                             Icon(
                               Icons.arrow_drop_down,
-                              color: Colors.grey.shade600,
+                              color: scheme.onSurfaceVariant,
                             ),
                           ],
                         ),
@@ -395,16 +392,17 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF0EA5E9).withValues(alpha: 0.1),
+              color: scheme.primaryContainer.withValues(alpha: 0.55),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                  color: const Color(0xFF0EA5E9).withValues(alpha: 0.3)),
+                color: scheme.primary.withValues(alpha: 0.22),
+              ),
             ),
             child: Row(
               children: [
                 Icon(
                   Icons.analytics,
-                  color: const Color(0xFF0EA5E9),
+                  color: scheme.primary,
                   size: 24,
                 ),
                 const SizedBox(width: 12),
@@ -417,7 +415,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          color: const Color(0xFF0EA5E9),
+                          color: scheme.primary,
                           fontFamily: 'Tajawal',
                         ),
                       ),
@@ -426,7 +424,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
                         '${Translations.getText('total_records', lang)}: ${_filteredRecords.length}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey.shade600,
+                          color: scheme.onSurfaceVariant,
                           fontFamily: 'Tajawal',
                         ),
                       ),
@@ -456,6 +454,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
 
   Widget _buildFilterButton(
       String filter, String label, IconData icon, String lang) {
+    final scheme = Theme.of(context).colorScheme;
     final isSelected = _selectedFilter == filter;
     return InkWell(
       onTap: () {
@@ -466,17 +465,17 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF0EA5E9) : Colors.grey.shade100,
+          color: isSelected ? scheme.primary : scheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected ? const Color(0xFF0EA5E9) : Colors.grey.shade300,
+            color: isSelected ? scheme.primary : scheme.outlineVariant,
           ),
         ),
         child: Column(
           children: [
             Icon(
               icon,
-              color: isSelected ? Colors.white : Colors.grey.shade600,
+              color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
               size: 20,
             ),
             const SizedBox(height: 4),
@@ -485,7 +484,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
-                color: isSelected ? Colors.white : Colors.grey.shade700,
+                color: isSelected ? scheme.onPrimary : scheme.onSurfaceVariant,
                 fontFamily: 'Tajawal',
               ),
               textAlign: TextAlign.center,
@@ -497,6 +496,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
   }
 
   Widget _buildEmptyState(String lang) {
+    final scheme = Theme.of(context).colorScheme;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32.0),
@@ -506,7 +506,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
             Icon(
               Icons.history,
               size: 64,
-              color: Colors.grey.shade400,
+              color: scheme.onSurfaceVariant.withValues(alpha: 0.6),
             ),
             const SizedBox(height: 16),
             Text(
@@ -514,7 +514,7 @@ class _AttendanceHistoryScreenState extends State<AttendanceHistoryScreen> {
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey.shade600,
+                color: scheme.onSurfaceVariant,
                 fontFamily: 'Tajawal',
               ),
             ),

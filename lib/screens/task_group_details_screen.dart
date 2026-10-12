@@ -5,6 +5,7 @@ import '../services/api_service.dart';
 import '../services/language_service.dart';
 import '../services/translations.dart';
 import '../theme/app_semantic_colors.dart';
+import 'task_creator_screen.dart';
 
 class TaskGroupDetailsScreen extends StatefulWidget {
   final int clientId;
@@ -84,6 +85,42 @@ class _TaskGroupDetailsScreenState extends State<TaskGroupDetailsScreen> {
     final a = _data?.assignments ?? const <TaskGroupAssignment>[];
     if (a.isEmpty) return false;
     return a.every((x) => x.status == 'Completed');
+  }
+
+  DateTime? _parseServerDateTime(String? value) {
+    final s = (value ?? '').trim();
+    if (s.isEmpty) return null;
+    final normalized = s.contains('T') ? s : s.replaceFirst(' ', 'T');
+    final withSeconds = normalized.length == 16 ? '$normalized:00' : normalized;
+    return DateTime.tryParse(withSeconds);
+  }
+
+  Future<void> _duplicateToNewTask() async {
+    final d = _data;
+    if (d == null) return;
+
+    final employeeIds = d.assignments
+        .map((a) => a.assignedEmployeeId)
+        .whereType<int>()
+        .where((id) => id > 0)
+        .toSet()
+        .toList()
+      ..sort();
+
+    await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => TaskCreatorScreen(
+          clientId: widget.clientId,
+          creatorEmployeeId: widget.creatorEmployeeId,
+          templateTitle: d.title,
+          templateDescription: d.description,
+          templateDueDateTime: _parseServerDateTime(d.dueDateTime),
+          templateAutoApprove: !d.requiresApproval,
+          templateEmployeeIds: employeeIds,
+        ),
+      ),
+    );
   }
 
   Future<void> _approveAwaiting() async {
@@ -198,6 +235,12 @@ class _TaskGroupDetailsScreenState extends State<TaskGroupDetailsScreen> {
       appBar: AppBar(
         title: Text(Translations.getText('tasks_details_title', lang)),
         actions: [
+          if (data != null)
+            IconButton(
+              onPressed: _isUpdating ? null : _duplicateToNewTask,
+              icon: const Icon(Icons.copy_rounded),
+              tooltip: Translations.getText('task_creator_duplicate', lang),
+            ),
           IconButton(
             onPressed: _isLoading ? null : _load,
             icon: const Icon(Icons.refresh_rounded),

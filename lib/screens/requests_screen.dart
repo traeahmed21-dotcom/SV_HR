@@ -242,41 +242,62 @@ class _RequestsScreenState extends State<RequestsScreen> {
   Widget build(BuildContext context) {
     final lang = context.watch<LanguageService>().currentLocale.languageCode;
     final filteredRequests = _getFilteredRequests(lang);
+    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(Translations.getText('my_requests', lang)),
-        backgroundColor: const Color(0xFF0EA5E9),
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: () {
-              _loadRequestTypes();
-              _loadRequests();
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => CreateRequestScreen(
-                    employeeData: widget.employeeData,
-                  ),
+        backgroundColor: scheme.primary,
+        surfaceTintColor: Colors.transparent,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        centerTitle: true,
+        title: Text(
+          Translations.getText('my_requests', lang),
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: scheme.onPrimary,
+              ),
+        ),
+        foregroundColor: scheme.onPrimary,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(132),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: scheme.surface,
+              border: Border(
+                bottom: BorderSide(
+                  color: scheme.outlineVariant.withValues(alpha: 0.6),
+                  width: 1,
                 ),
-              );
-
-              // إذا تم إنشاء طلب بنجاح، قم بتحديث الشاشة
-              if (result == true) {
-                _loadRequests();
-              }
-            },
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+              child: _buildFilterBarContent(lang, scheme),
+            ),
           ),
-        ],
+        ),
       ),
       body: _buildBody(filteredRequests),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => CreateRequestScreen(
+                employeeData: widget.employeeData,
+              ),
+            ),
+          );
+
+          if (result == true) {
+            _loadRequests();
+          }
+        },
+        icon: const Icon(Icons.add_rounded),
+        label: Text(Translations.getText('new_request', lang)),
+      ),
     );
   }
 
@@ -344,231 +365,213 @@ class _RequestsScreenState extends State<RequestsScreen> {
     }
 
     if (_requests.isEmpty) {
-      return Column(
-        children: [
-          _buildFixedFilterBar(),
-          Expanded(
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.assignment,
-                    size: 100,
-                    color: Colors.grey,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    Translations.getText('no_requests', lang),
-                    style: const TextStyle(
-                      fontSize: 18,
-                      color: Colors.grey,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    Translations.getText('tap_plus_to_create_request', lang),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-
-    return Column(
-      children: [
-        _buildFixedFilterBar(),
-        Expanded(
-          child: RefreshIndicator(
-            onRefresh: _loadRequests,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: filteredRequests.length,
-              itemBuilder: (context, index) {
-                final request = filteredRequests[index];
-                return _buildRequestCard(request, lang);
-              },
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildFixedFilterBar() {
-    final lang = context.watch<LanguageService>().currentLocale.languageCode;
-    return Material(
-      color: Colors.white,
-      elevation: 2,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+      return Center(
         child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            TextField(
-              controller: _searchController,
-              onChanged: (_) => setState(() {}),
-              textInputAction: TextInputAction.search,
-              decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
-                hintText: Translations.getText('search_hint', lang),
-                suffixIcon: _searchController.text.trim().isEmpty
-                    ? null
-                    : IconButton(
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() {});
-                        },
-                        icon: const Icon(Icons.close),
-                      ),
-                filled: true,
-                fillColor: Colors.grey[50],
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.grey[300]!),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: const BorderSide(color: Color(0xFF0EA5E9)),
-                ),
-              ),
+            Icon(
+              Icons.assignment_outlined,
+              size: 88,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurfaceVariant
+                  .withValues(alpha: 0.65),
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return DropdownMenu<String>(
-                        width: constraints.maxWidth,
-                        initialSelection: _selectedRequestTypeValue,
-                        onSelected: (value) {
-                          if (value == null) {
-                            return;
-                          }
-                          setState(() => _selectedRequestTypeValue = value);
-                        },
-                        label: Text(Translations.getText('request_type', lang)),
-                        leadingIcon: const Icon(Icons.filter_list),
-                        trailingIcon: _isLoadingRequestTypes
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : null,
-                        inputDecorationTheme: InputDecorationTheme(
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide:
-                                const BorderSide(color: Color(0xFF0EA5E9)),
-                          ),
-                        ),
-                        dropdownMenuEntries: _requestTypeOptions.map((t) {
-                          if (t == _allRequestTypeValue) {
-                            return DropdownMenuEntry<String>(
-                              value: _allRequestTypeValue,
-                              label: Translations.getText('all', lang),
-                            );
-                          }
-                          return DropdownMenuEntry<String>(
-                            value: t,
-                            label: t,
-                          );
-                        }).toList(),
-                      );
-                    },
+            const SizedBox(height: 14),
+            Text(
+              Translations.getText('no_requests', lang),
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      return DropdownMenu<_RequestSort>(
-                        width: constraints.maxWidth,
-                        initialSelection: _sort,
-                        onSelected: (value) {
-                          if (value == null) {
-                            return;
-                          }
-                          setState(() => _sort = value);
-                        },
-                        label: Text(Translations.getText('sort', lang)),
-                        leadingIcon: const Icon(Icons.sort),
-                        inputDecorationTheme: InputDecorationTheme(
-                          filled: true,
-                          fillColor: Colors.grey[50],
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 12,
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.grey[300]!),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide:
-                                const BorderSide(color: Color(0xFF0EA5E9)),
-                          ),
-                        ),
-                        dropdownMenuEntries: [
-                          DropdownMenuEntry<_RequestSort>(
-                            value: _RequestSort.newestFirst,
-                            label: Translations.getText(
-                              'sort_newest_first',
-                              lang,
-                            ),
-                          ),
-                          DropdownMenuEntry<_RequestSort>(
-                            value: _RequestSort.oldestFirst,
-                            label: Translations.getText(
-                              'sort_oldest_first',
-                              lang,
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ),
-              ],
+            ),
+            const SizedBox(height: 6),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 40),
+              child: Text(
+                Translations.getText('tap_plus_to_create_request', lang),
+                textAlign: TextAlign.center,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+              ),
             ),
           ],
         ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadRequests,
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
+        itemCount: filteredRequests.length,
+        itemBuilder: (context, index) {
+          final request = filteredRequests[index];
+          return _buildRequestCard(request, lang);
+        },
       ),
+    );
+  }
+
+  Widget _buildFilterBarContent(String lang, ColorScheme scheme) {
+    return Column(
+      children: [
+        TextField(
+          controller: _searchController,
+          onChanged: (_) => setState(() {}),
+          textInputAction: TextInputAction.search,
+          decoration: InputDecoration(
+            prefixIcon: const Icon(Icons.search),
+            hintText: Translations.getText('search_hint', lang),
+            suffixIcon: _searchController.text.trim().isEmpty
+                ? null
+                : IconButton(
+                    onPressed: () {
+                      _searchController.clear();
+                      setState(() {});
+                    },
+                    icon: const Icon(Icons.close),
+                  ),
+            filled: true,
+            fillColor: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 12,
+            ),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: scheme.outlineVariant),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: scheme.outlineVariant),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: scheme.primary, width: 2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return DropdownMenu<String>(
+                    width: constraints.maxWidth,
+                    initialSelection: _selectedRequestTypeValue,
+                    onSelected: (value) {
+                      if (value == null) {
+                        return;
+                      }
+                      setState(() => _selectedRequestTypeValue = value);
+                    },
+                    label: Text(Translations.getText('request_type', lang)),
+                    leadingIcon: const Icon(Icons.filter_list),
+                    trailingIcon: _isLoadingRequestTypes
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : null,
+                    inputDecorationTheme: InputDecorationTheme(
+                      filled: true,
+                      fillColor:
+                          scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: scheme.outlineVariant),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: scheme.outlineVariant),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: scheme.primary, width: 2),
+                      ),
+                    ),
+                    dropdownMenuEntries: _requestTypeOptions.map((t) {
+                      if (t == _allRequestTypeValue) {
+                        return DropdownMenuEntry<String>(
+                          value: _allRequestTypeValue,
+                          label: Translations.getText('all', lang),
+                        );
+                      }
+                      return DropdownMenuEntry<String>(
+                        value: t,
+                        label: t,
+                      );
+                    }).toList(),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return DropdownMenu<_RequestSort>(
+                    width: constraints.maxWidth,
+                    initialSelection: _sort,
+                    onSelected: (value) {
+                      if (value == null) {
+                        return;
+                      }
+                      setState(() => _sort = value);
+                    },
+                    label: Text(Translations.getText('sort', lang)),
+                    leadingIcon: const Icon(Icons.sort),
+                    inputDecorationTheme: InputDecorationTheme(
+                      filled: true,
+                      fillColor:
+                          scheme.surfaceContainerHighest.withValues(alpha: 0.6),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 12,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: scheme.outlineVariant),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: scheme.outlineVariant),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: scheme.primary, width: 2),
+                      ),
+                    ),
+                    dropdownMenuEntries: [
+                      DropdownMenuEntry<_RequestSort>(
+                        value: _RequestSort.newestFirst,
+                        label: Translations.getText(
+                          'sort_newest_first',
+                          lang,
+                        ),
+                      ),
+                      DropdownMenuEntry<_RequestSort>(
+                        value: _RequestSort.oldestFirst,
+                        label: Translations.getText(
+                          'sort_oldest_first',
+                          lang,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 

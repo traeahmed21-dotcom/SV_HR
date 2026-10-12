@@ -6,18 +6,33 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'screens/login_screen.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:livekit_client/livekit_client.dart';
 import 'services/notification_service.dart';
 import 'services/language_service.dart';
 import 'services/translations.dart';
 import 'config/api_config.dart';
 import 'theme/app_theme.dart';
 import 'models/api_models.dart' as api_models;
-import 'screens/home_screen.dart';
+import 'screens/app_shell.dart';
 import 'package:url_strategy/url_strategy.dart';
+import 'widgets/app_update_gate.dart';
 
 const bool _enableRemoteDebugTelemetry = true;
 const String _debugServerUrl = 'http://192.168.1.163:7777/event';
 const String _debugSessionId = 'camera-login-biometrics';
+
+const AudioSessionOptions _walkieAudioSessionOptions =
+    AudioSessionOptions.communication(
+  android: AndroidAudioSessionConfiguration(
+    audioMode: AndroidAudioMode.inCommunication,
+    manageAudioFocus: true,
+    focusMode: AndroidAudioFocusMode.gain,
+    streamType: AndroidAudioStreamType.voiceCall,
+    usageType: AndroidAudioAttributesUsageType.voiceCommunication,
+    contentType: AndroidAudioAttributesContentType.speech,
+    forceAudioRouting: true,
+  ),
+);
 
 // #region debug-point A:reporting-helper
 Future<void> _reportDebugEvent(
@@ -47,6 +62,11 @@ Future<void> _reportDebugEvent(
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await LiveKitClient.initialize(
+    initialAudioSessionOptions: _walkieAudioSessionOptions,
+  );
+  await AudioManager.instance.setSpeakerOutputPreferred(true, force: true);
 
   FlutterError.onError = (FlutterErrorDetails details) {
     // #region debug-point A:flutter-error
@@ -150,12 +170,14 @@ class MyApp extends StatelessWidget {
             darkTheme: AppTheme.dark(),
             themeMode: ThemeMode.system,
 
-            home: savedUser != null
-                ? HomeScreen(
-                    employeeId: savedUser!.employeeNumber,
-                    employeeData: savedUser!,
-                  )
-                : const LoginScreen(),
+            home: AppUpdateGate(
+              child: savedUser != null
+                  ? AppShell(
+                      employeeNumber: savedUser!.employeeNumber,
+                      employeeData: savedUser!,
+                    )
+                  : const LoginScreen(),
+            ),
           );
         },
       ),

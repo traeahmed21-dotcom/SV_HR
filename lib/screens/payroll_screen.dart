@@ -21,21 +21,20 @@ class _PayrollScreenState extends State<PayrollScreen> {
   Widget build(BuildContext context) {
     final languageService = Provider.of<LanguageService>(context);
     final lang = languageService.currentLocale.languageCode;
+    final scheme = Theme.of(context).colorScheme;
     // لا نستخدم بيانات وهمية
     final payroll = null;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(Translations.getText('payroll', lang)),
-        backgroundColor: const Color(0xFF0EA5E9),
-        foregroundColor: Colors.white,
       ),
       body: Column(
         children: [
           // Month/Year Selector
           Container(
             padding: const EdgeInsets.all(16),
-            color: Colors.grey.withOpacity(0.1),
+            color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
             child: Row(
               children: [
                 Expanded(

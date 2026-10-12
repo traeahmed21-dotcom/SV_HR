@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/employee.dart';
 import '../services/language_service.dart';
 import '../services/translations.dart';
+import '../widgets/custom_card.dart';
 import 'login_screen.dart';
 import 'employee_full_info_screen.dart';
 import 'change_password_screen.dart';
@@ -133,19 +134,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Provider.of<LanguageService>(context, listen: false);
     final lang = languageService.isArabic ? 'ar' : 'en';
 
-    return Container(
+    return CustomCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -173,6 +163,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildDetailRow(String label, String value, IconData icon) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Row(
@@ -180,12 +171,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: const Color(0xFF0EA5E9).withValues(alpha: 0.1),
+              color: scheme.primaryContainer,
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
-              color: const Color(0xFF0EA5E9),
+              color: scheme.onPrimaryContainer,
               size: 20,
             ),
           ),
@@ -196,10 +187,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 14, color: scheme.onSurfaceVariant),
                 ),
                 const SizedBox(height: 4),
                 Text(
@@ -222,19 +210,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         Provider.of<LanguageService>(context, listen: false);
     final lang = languageService.isArabic ? 'ar' : 'en';
 
-    return Container(
+    return CustomCard(
       padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -298,25 +275,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildActionTile(String title, IconData icon, VoidCallback onTap,
       {bool isDestructive = false}) {
+    final scheme = Theme.of(context).colorScheme;
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: isDestructive
-              ? Colors.red.withValues(alpha: 0.1)
-              : const Color(0xFF0EA5E9).withValues(alpha: 0.1),
+              ? scheme.errorContainer
+              : scheme.primaryContainer,
           borderRadius: BorderRadius.circular(8),
         ),
         child: Icon(
           icon,
-          color: isDestructive ? Colors.red : const Color(0xFF0EA5E9),
+          color: isDestructive ? scheme.onErrorContainer : scheme.onPrimaryContainer,
           size: 20,
         ),
       ),
       title: Text(
         title,
         style: TextStyle(
-          color: isDestructive ? Colors.red : Colors.black87,
+          color: isDestructive ? scheme.error : scheme.onSurface,
           fontWeight: FontWeight.w600,
         ),
       ),
@@ -392,16 +370,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
               await prefs.setBool('is_logged_in', false);
               
               if (context.mounted) {
-                Navigator.pushAndRemoveUntil(
-                  context,
+                Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
                   MaterialPageRoute(builder: (context) => const LoginScreen()),
                   (route) => false,
                 );
               }
             },
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
             ),
             child: Text(Translations.getText('logout', lang)),
           ),

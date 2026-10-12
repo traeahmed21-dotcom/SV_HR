@@ -6,7 +6,6 @@ import '../services/biometric_api_service.dart';
 import '../services/biometric_service.dart';
 import '../services/language_service.dart';
 import '../services/translations.dart';
-import 'biometric_settings_screen.dart';
 
 class BiometricRegistrationScreen extends StatefulWidget {
   final String employeeNumber;
@@ -538,36 +537,6 @@ class _BiometricRegistrationScreenState
                         ),
                       ),
                       const SizedBox(height: 16),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 56,
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) =>
-                                    const BiometricSettingsScreen(),
-                              ),
-                            );
-                          },
-                          icon: const Icon(Icons.settings),
-                          label: Text(
-                            Translations.getText('biometric_settings', lang),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.orange,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                        ),
-                      ),
                     ] else ...[
                       SizedBox(
                         width: double.infinity,

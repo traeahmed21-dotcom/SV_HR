@@ -97,11 +97,10 @@ class _BiometricSettingsScreenState extends State<BiometricSettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final lang = context.watch<LanguageService>().currentLocale.languageCode;
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Text(Translations.getText('biometric_settings', lang)),
-        backgroundColor: const Color(0xFF0EA5E9),
-        foregroundColor: Colors.white,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -122,13 +121,15 @@ class _BiometricSettingsScreenState extends State<BiometricSettingsScreen> {
                       padding: const EdgeInsets.all(12),
                       margin: const EdgeInsets.only(bottom: 16),
                       decoration: BoxDecoration(
-                        color: Colors.red.shade50,
+                        color: scheme.errorContainer,
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.red.shade200),
+                        border: Border.all(
+                          color: scheme.error.withValues(alpha: 0.25),
+                        ),
                       ),
                       child: Text(
                         _errorMessage!,
-                        style: TextStyle(color: Colors.red.shade700),
+                        style: TextStyle(color: scheme.onErrorContainer),
                       ),
                     ),
 
@@ -406,8 +407,6 @@ class _BiometricSettingsScreenState extends State<BiometricSettingsScreen> {
                   style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0EA5E9),
-                  foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16),
                   ),

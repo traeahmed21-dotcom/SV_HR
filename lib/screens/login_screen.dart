@@ -12,7 +12,7 @@ import '../services/language_service.dart';
 import '../services/translations.dart';
 import '../services/approval_permission_service.dart';
 import '../models/api_models.dart' as api_models;
-import 'home_screen.dart';
+import 'app_shell.dart';
 import 'forgot_password_email_screen.dart';
 import '../widgets/responsive_center.dart';
 import '../utils/platform_helper.dart';
@@ -465,11 +465,10 @@ class _LoginScreenState extends State<LoginScreen>
           // حفظ الجلسة فقط بعد اجتياز البوابة البيومترية بنجاح
           await _saveCredentials(effectiveEmployee);
 
-          Navigator.pushReplacement(
-            context,
+          Navigator.of(context, rootNavigator: true).pushReplacement(
             MaterialPageRoute(
-              builder: (context) => HomeScreen(
-                employeeId: response.employee!.employeeNumber,
+              builder: (context) => AppShell(
+                employeeNumber: response.employee!.employeeNumber,
                 employeeData: response.employee!,
               ),
             ),
@@ -510,11 +509,13 @@ class _LoginScreenState extends State<LoginScreen>
       employee.employeeNumber,
     );
 
+    final rawAttendanceMethod = faceStatus['AttendanceMethod'];
+    final hasAttendanceMethod = rawAttendanceMethod != null;
     final attendanceMethod =
-        int.tryParse(faceStatus['AttendanceMethod']?.toString() ?? '0') ?? 0;
-    final shouldRequireFace = faceStatus['IsFaceRequired'] == true ||
-        attendanceMethod == 1 ||
-        attendanceMethod == 2;
+        int.tryParse(rawAttendanceMethod?.toString() ?? '0') ?? 0;
+    final shouldRequireFace = hasAttendanceMethod
+        ? attendanceMethod == 1 || attendanceMethod == 2
+        : faceStatus['IsFaceRequired'] == true;
     final hasStoredFace = faceStatus['HasFaceTemplate'] == true ||
         faceStatus['HasFaceImage'] == true ||
         faceStatus['HasImage'] == true ||
@@ -530,6 +531,7 @@ class _LoginScreenState extends State<LoginScreen>
         'lang': lang,
         'statusSuccess': faceStatus['Success'] == true,
         'attendanceMethod': faceStatus['AttendanceMethod'],
+        'hasAttendanceMethod': hasAttendanceMethod,
         'isFaceRequired': faceStatus['IsFaceRequired'],
         'shouldRequireFace': shouldRequireFace,
         'hasStoredFace': hasStoredFace,

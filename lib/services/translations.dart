@@ -40,6 +40,76 @@ class Translations {
       'error_login_failed': 'فشل في تسجيل الدخول، يرجى التحقق من البيانات',
       'notifications': 'الإشعارات',
       'notification': 'إشعار',
+      'employee_chats': 'الدردشة',
+      'search_chats': 'ابحث في المحادثات',
+      'chat_empty_title': 'لا توجد محادثات بعد',
+      'chat_empty_desc':
+          'ستظهر هنا المحادثات الفردية والجماعية التي يضيفك إليها قسم الموارد البشرية.',
+      'chat_load_error': 'تعذر تحميل المحادثات',
+      'chat_input_placeholder': 'اكتب رسالتك هنا',
+      'chat_send_error': 'تعذر إرسال الرسالة',
+      'chat_group_label': 'مجموعة',
+      'chat_direct_label': 'محادثة مباشرة',
+      'chat_members': 'أعضاء',
+      'chat_no_messages': 'لا توجد رسائل بعد',
+      'chat_new_message_arrived': 'وصلت رسالة جديدة',
+      'chat_time_now': 'الآن',
+      'chat_time_minutes_ago': 'منذ {count} د',
+      'chat_time_hours_ago': 'منذ {count} س',
+      'walkie_title': 'الووكي-توكي',
+      'walkie_subtitle': 'تواصل صوتي سريع للمجموعات التشغيلية',
+      'walkie_search_groups': 'ابحث في المجموعات الصوتية',
+      'walkie_groups_count': 'المجموعات المتاحة',
+      'walkie_connection_status': 'حالة الاتصال',
+      'walkie_status_ready': 'جاهز',
+      'walkie_status_connected': 'متصل',
+      'walkie_can_listen': 'الاستماع',
+      'walkie_can_speak': 'التحدث',
+      'walkie_can_initiate': 'بدء الاتصال',
+      'walkie_priority': 'أولوية',
+      'walkie_default_group_desc':
+          'مجموعة صوتية جاهزة للتواصل الفوري داخل العمل.',
+      'walkie_connect': 'بدء الاتصال',
+      'walkie_connecting': 'جارٍ الاتصال...',
+      'walkie_disconnect': 'إنهاء الاتصال',
+      'walkie_connected': 'تم تجهيز جلسة الووكي-توكي بنجاح',
+      'walkie_disconnected': 'تم إنهاء جلسة الووكي-توكي',
+      'walkie_connect_error': 'تعذر بدء جلسة الووكي-توكي',
+      'walkie_hold_to_talk': 'اضغط مطولاً للتحدث',
+      'walkie_talking_now': 'أنت تتحدث الآن',
+      'walkie_session_info': 'بيانات الجلسة',
+      'walkie_provider': 'المزود',
+      'walkie_room_name': 'الغرفة',
+      'walkie_identity': 'المعرف',
+      'walkie_not_connected_yet': 'لم يتم الاتصال بعد',
+      'walkie_empty_title': 'لا توجد مجموعات صوتية',
+      'walkie_empty_desc':
+          'سيظهر هنا أي فريق صوتي يضيفك إليه قسم الموارد البشرية.',
+      'walkie_load_error': 'تعذر تحميل مجموعات الووكي-توكي',
+      'walkie_permission_required':
+          'يجب منح إذن الميكروفون لاستخدام الووكي-توكي',
+      'walkie_connect_live_error': 'تعذر الاتصال بالغرفة الصوتية الحية',
+      'walkie_microphone_enable_error': 'تعذر تشغيل الميكروفون في الجلسة',
+      'walkie_room_ready': 'تم الاتصال بالغرفة الصوتية بنجاح',
+      'walkie_participants': 'المشاركون',
+      'walkie_no_participants': 'لا يوجد مشاركون آخرون في هذه الغرفة حالياً',
+      'walkie_you': 'أنت',
+      'walkie_remote': 'مشارك عن بُعد',
+          'walkie_audio_live': 'الصوت نشط الآن',
+          'walkie_audio_muted': 'الميكروفون مكتوم',
+          'walkie_listening_only': 'وضع الاستماع',
+          'walkie_press_and_hold_help': 'اضغط مطولاً حتى يتم إرسال صوتك للمجموعة',
+          'walkie_notification_permission_required':
+              'اسمح بالإشعارات حتى يستمر الووكي-توكي في الخلفية ويظهر الإشعار الدائم.',
+          'walkie_background_service_title': 'الووكي-توكي نشط',
+          'walkie_background_connected_group':
+              'متصل بالمجموعة {group} وجاهز لاستقبال الصوت في الخلفية.',
+          'walkie_background_you_talking_group':
+              'أنت تتحدث الآن داخل المجموعة {group}.',
+          'walkie_background_remote_speaking':
+              '{name} يتحدث الآن داخل المجموعة {group}.',
+          'walkie_background_multiple_speakers':
+              'هناك {count} مشاركين يتحدثون الآن داخل المجموعة {group}.',
       'no_notifications': 'لا توجد إشعارات',
       'all_notifications': 'الكل',
       'unread_notifications': 'غير المقروء',
@@ -186,12 +256,14 @@ class Translations {
       'approvals': 'الموافقات',
       'reports': 'التقارير',
       'profile': 'الملف الشخصي',
+      'more': 'المزيد',
       'settings': 'الإعدادات',
       'logout': 'تسجيل الخروج',
       'confirm_logout': 'هل أنت متأكد من تسجيل الخروج؟',
       'logout_success': 'تم تسجيل الخروج بنجاح',
       'dashboard': 'لوحة التحكم',
       'quick_actions': 'الإجراءات السريعة',
+      'admin_section_title': 'لوحة الإدارة',
       'quick_actions_section_attendance_shifts':
           'الدوام والموقع (Attendance & Shifts)',
       'quick_actions_section_requests_approvals':
@@ -223,6 +295,7 @@ class Translations {
       'tasks_status_inprogress': 'قيد التنفيذ',
       'tasks_status_awaiting': 'بانتظار اعتماد الإدارة',
       'tasks_status_completed': 'مكتملة',
+      'tasks_mark_inprogress': 'قيد التنفيذ',
       'tasks_mark_done': 'تم الإنجاز',
       'tasks_details_title': 'تفاصيل المهمة',
       'task_creator_title': 'إدارة مهام الموظفين',
@@ -234,11 +307,17 @@ class Translations {
       'task_creator_task_description': 'الوصف',
       'task_creator_due': 'موعد الاستحقاق',
       'task_creator_send': 'إنشاء',
+      'task_creator_duplicate': 'تكرار',
+      'task_creator_template_banner':
+          'تم نسخ بيانات المهمة. اختر الموظفين وموعد الاستحقاق ثم اضغط إنشاء.',
+      'task_creator_template_clear': 'إلغاء',
+      'task_creator_template_ready': 'تم تجهيز المهمة للتكرار',
       'task_creator_approve': 'اعتماد',
       'task_creator_cancel': 'إلغاء',
       'task_creator_no_access': 'لا تملك صلاحية إدارة المهام',
       'task_creator_auto_approve': 'اعتماد تلقائي',
-      'task_creator_auto_approve_hint': 'عند إنجاز الموظف للمهمة تُغلق مباشرة كمكتملة بدون انتظار اعتماد الإدارة',
+      'task_creator_auto_approve_hint':
+          'عند إنجاز الموظف للمهمة تُغلق مباشرة كمكتملة بدون انتظار اعتماد الإدارة',
       'task_creator_dashboard': 'إحصائيات المهام',
       'task_creator_stats_total': 'الإجمالي',
       'task_creator_stats_completed': 'مكتملة',
@@ -719,7 +798,8 @@ class Translations {
       'opening_file': 'جاري فتح: {fileName}',
       'file_opened': 'تم فتح: {fileName}',
       'file_permissions_required_open': 'يجب منح أذونات الملفات لفتح المرفقات',
-      'file_permissions_required_download': 'يجب منح أذونات الملفات لتحميل المرفقات',
+      'file_permissions_required_download':
+          'يجب منح أذونات الملفات لتحميل المرفقات',
       'downloading_file': 'جاري تحميل: {fileName}',
       'downloaded_file': 'تم تحميل: {fileName}',
       'file_path': 'المسار: {path}',
@@ -747,14 +827,16 @@ class Translations {
       'loading_request_details': 'جاري تحميل تفاصيل الطلب...',
       'invalid_request_id_with_id': 'خطأ في معرف الطلب: {id}',
       'no_request_data_available': 'لا توجد بيانات متاحة للطلب',
-      'error_loading_request_details_with_error': 'حدث خطأ في تحميل تفاصيل الطلب: {error}',
+      'error_loading_request_details_with_error':
+          'حدث خطأ في تحميل تفاصيل الطلب: {error}',
       'all_requests_processed': 'جميع الطلبات تمت معالجتها',
       'approval_failed': 'فشل في الموافقة على الطلب',
       'rejection_failed': 'فشل في رفض الطلب',
       'face_verification': 'التحقق من الوجه',
       'face_enrollment': 'تسجيل الوجه',
       'face_procedure_setup_title': 'تجهيز الكاميرا',
-      'face_procedure_setup_desc': 'يتم الآن تجهيز الكاميرا لبدء إجراءات الوجه.',
+      'face_procedure_setup_desc':
+          'يتم الآن تجهيز الكاميرا لبدء إجراءات الوجه.',
       'face_procedure_scan_title': 'فحص الوجه',
       'face_procedure_scan_desc':
           'يتم التحقق من الحيوية للتأكد أنك أمام الكاميرا وأن الوجه حقيقي.',
@@ -766,7 +848,8 @@ class Translations {
           'هذا الإجراء لحفظ بيانات وجهك لاستخدامها في الحضور والانصراف.',
       'face_fix_face_now': 'قم بتثبيت وجهك الآن',
       'face_processing_in_progress': 'عملية قيد التنفيذ',
-      'face_processing_wait': 'يرجى الانتظار وعدم إغلاق الشاشة حتى تكتمل العملية.',
+      'face_processing_wait':
+          'يرجى الانتظار وعدم إغلاق الشاشة حتى تكتمل العملية.',
       'face_challenge_title': 'التحدي المباشر',
       'face_challenge_progress': 'التحديات: {done}/{required}',
       'face_guidance_title': 'تعليمات سريعة',
@@ -792,7 +875,8 @@ class Translations {
       'face_reset_success': 'تم إعادة تعيين بصمة الوجه بنجاح',
       'face_reset_failed': 'فشل إعادة التعيين',
       'face_mgmt_title': 'إدارة بصمة الوجه للموظفين',
-      'face_mgmt_description': 'إدارة وتسجيل وحذف بصمات الوجه الخاصة بالموظفين.',
+      'face_mgmt_description':
+          'إدارة وتسجيل وحذف بصمات الوجه الخاصة بالموظفين.',
       'face_registered': 'مسجلة',
       'face_not_registered': 'غير مسجلة',
       'face_mgmt_update_optional': 'عرض/تحديث البصمة',
@@ -802,7 +886,8 @@ class Translations {
       'face_mgmt_confirm_delete_title': 'تأكيد حذف بصمة الوجه',
       'face_mgmt_confirm_delete_message':
           'هل أنت متأكد من حذف بصمة الوجه للموظف {name} ({employeeNumber})؟',
-      'face_mgmt_deleted_success': 'تم حذف بصمة الوجه وتعيين الحالة إلى "غير مسجلة".',
+      'face_mgmt_deleted_success':
+          'تم حذف بصمة الوجه وتعيين الحالة إلى "غير مسجلة".',
       'face_mgmt_delete_failed': 'فشل حذف بصمة الوجه',
       'face_mgmt_login_enroll_required':
           'يجب تسجيل بصمة الوجه قبل الدخول إلى النظام.',
@@ -821,13 +906,17 @@ class Translations {
       'biometric_settings': 'إعدادات البصمة',
       'error_checking_biometric_with_error': 'خطأ في التحقق من البصمة: {error}',
       'biometric_already_registered': 'البصمة مسجلة مسبقاً لهذا الموظف',
-      'device_biometric_not_setup': 'الجهاز يدعم البصمة أو الوجه لكن لم يتم إعداد أي بصمة أو وجه في إعدادات الجهاز. يرجى إضافة بصمة أو وجه أولاً.',
+      'device_biometric_not_setup':
+          'الجهاز يدعم البصمة أو الوجه لكن لم يتم إعداد أي بصمة أو وجه في إعدادات الجهاز. يرجى إضافة بصمة أو وجه أولاً.',
       'register_fingerprint_for_employee': 'تسجيل البصمة للموظف {employee}',
-      'fingerprint_registration_failed_try_again': 'فشل في تسجيل البصمة. يرجى المحاولة مرة أخرى.',
+      'fingerprint_registration_failed_try_again':
+          'فشل في تسجيل البصمة. يرجى المحاولة مرة أخرى.',
       'fingerprint_registered_success': 'تم تسجيل البصمة بنجاح',
-      'error_registering_fingerprint_with_error': 'خطأ في تسجيل البصمة: {error}',
+      'error_registering_fingerprint_with_error':
+          'خطأ في تسجيل البصمة: {error}',
       'register_face_for_employee': 'تسجيل الوجه للموظف {employee}',
-      'face_registration_failed_try_again': 'فشل في تسجيل الوجه. يرجى المحاولة مرة أخرى.',
+      'face_registration_failed_try_again':
+          'فشل في تسجيل الوجه. يرجى المحاولة مرة أخرى.',
       'face_registered_success': 'تم تسجيل الوجه بنجاح',
       'error_registering_face_with_error': 'خطأ في تسجيل الوجه: {error}',
       'biometric_deleted_success': 'تم حذف البصمة بنجاح',
@@ -852,15 +941,20 @@ class Translations {
       'no_biometric_types_available': 'لا توجد أنواع بصمة متوفرة في هذا الجهاز',
       'enable_biometric_instructions': 'تعليمات تفعيل البصمة',
       'instruction_device_support_title': '1. تأكد من أن جهازك يدعم البصمة',
-      'instruction_device_support_subtitle': 'بعض الأجهزة القديمة لا تدعم البصمة',
+      'instruction_device_support_subtitle':
+          'بعض الأجهزة القديمة لا تدعم البصمة',
       'instruction_go_to_settings_title': '1. اذهب إلى إعدادات الجهاز',
       'instruction_go_to_settings_subtitle': 'Settings > Security > Biometrics',
-      'instruction_setup_biometric_title': '1. قم بإعداد البصمة في إعدادات الجهاز',
-      'instruction_setup_biometric_subtitle': 'Settings > Security > Fingerprint/Face Recognition',
+      'instruction_setup_biometric_title':
+          '1. قم بإعداد البصمة في إعدادات الجهاز',
+      'instruction_setup_biometric_subtitle':
+          'Settings > Security > Fingerprint/Face Recognition',
       'instruction_biometric_ready_title': 'البصمة مفعلة وجاهزة للاستخدام',
-      'instruction_biometric_ready_subtitle': 'يمكنك الآن تسجيل البصمة في التطبيق',
+      'instruction_biometric_ready_subtitle':
+          'يمكنك الآن تسجيل البصمة في التطبيق',
       'instruction_add_biometric_title': '2. أضف بصمة أو وجه في إعدادات الجهاز',
-      'instruction_add_biometric_subtitle': 'Settings > Security > Add Fingerprint/Face',
+      'instruction_add_biometric_subtitle':
+          'Settings > Security > Add Fingerprint/Face',
       'instruction_return_and_try_title': '3. عد إلى التطبيق وجرب تسجيل البصمة',
       'instruction_return_and_try_subtitle': 'ستتمكن من تسجيل البصمة الآن',
       'biometric_test': 'اختبار البصمة',
@@ -871,9 +965,11 @@ class Translations {
       'biometric_test_failed': 'فشل في التحقق من البصمة',
       'biometric_test_error_with_error': 'خطأ في اختبار البصمة: {error}',
       'permission_required_title': 'إذن مطلوب',
-      'permission_storage_content': 'يحتاج التطبيق إلى إذن للوصول إلى الملفات لتحميل المرفقات. يرجى منح الإذن من إعدادات التطبيق.',
+      'permission_storage_content':
+          'يحتاج التطبيق إلى إذن للوصول إلى الملفات لتحميل المرفقات. يرجى منح الإذن من إعدادات التطبيق.',
       'permissions_required_title': 'أذونات مطلوبة',
-      'media_permissions_content': 'يحتاج التطبيق إلى أذونات للوصول إلى الصور والفيديوهات والملفات الصوتية. يرجى منح الأذونات المطلوبة.',
+      'media_permissions_content':
+          'يحتاج التطبيق إلى أذونات للوصول إلى الصور والفيديوهات والملفات الصوتية. يرجى منح الأذونات المطلوبة.',
       'permission_error_title': 'خطأ في الأذونات',
       'app_settings': 'إعدادات التطبيق',
       'liveness_title': 'فحص الحياة والهوية',
@@ -881,18 +977,25 @@ class Translations {
       'liveness_waiting_face': 'ضع وجهك داخل الإطار بوضوح',
       'liveness_challenge_blink': 'الرجاء الرمش مرتين بشكل طبيعي',
       'liveness_challenge_smile': 'الرجاء الابتسام بشكل طبيعي',
-      'liveness_challenge_mouth': 'الرجاء فتح الفم قليلاً كما عند النطق بحرف الألف',
-      'liveness_challenge_tilt_left': 'الرجاء إمالة الرأس قليلاً إلى اليسار (جهة أذنك اليسرى)',
-      'liveness_challenge_tilt_right': 'الرجاء إمالة الرأس قليلاً إلى اليمين (جهة أذنك اليمنى)',
-      'liveness_challenge_tilt_up': 'الرجاء إمالة الرأس قليلاً للأعلى (النظر للأعلى قليلاً)',
-      'liveness_challenge_tilt_down': 'الرجاء إمالة الرأس قليلاً للأسفل (النظر للأسفل قليلاً)',
+      'liveness_challenge_mouth':
+          'الرجاء فتح الفم قليلاً كما عند النطق بحرف الألف',
+      'liveness_challenge_tilt_left':
+          'الرجاء إمالة الرأس قليلاً إلى اليسار (جهة أذنك اليسرى)',
+      'liveness_challenge_tilt_right':
+          'الرجاء إمالة الرأس قليلاً إلى اليمين (جهة أذنك اليمنى)',
+      'liveness_challenge_tilt_up':
+          'الرجاء إمالة الرأس قليلاً للأعلى (النظر للأعلى قليلاً)',
+      'liveness_challenge_tilt_down':
+          'الرجاء إمالة الرأس قليلاً للأسفل (النظر للأسفل قليلاً)',
       'liveness_analyzing': 'جاري تحليل الحياة والأمان...',
       'liveness_passed': 'تم التحقق من الهوية بنجاح ✅',
-      'liveness_failed_spoof': '⚠️ تم اكتشاف محاولة خداع! الرجاء استخدام وجهك الحقيقي أمام الكاميرا مباشرة',
+      'liveness_failed_spoof':
+          '⚠️ تم اكتشاف محاولة خداع! الرجاء استخدام وجهك الحقيقي أمام الكاميرا مباشرة',
       'liveness_failed_timeout': 'انتهت مهلة الفحص، الرجاء المحاولة مرة أخرى',
       'liveness_failed_generic': 'فشل فحص الحياة، الرجاء المحاولة مرة أخرى',
       'liveness_progress': 'التقدم: {done} من {total}',
-      'liveness_security_note': 'لأغراض أمنية، ستُطلب منك تنفيذ حركات عشوائية لضمان وجودك الحقيقي',
+      'liveness_security_note':
+          'لأغراض أمنية، ستُطلب منك تنفيذ حركات عشوائية لضمان وجودك الحقيقي',
     },
     'en': {
       // Login Page
@@ -934,7 +1037,78 @@ class Translations {
       'error_login_failed': 'Login failed, please check your credentials',
       'notifications': 'Notifications',
       'notification': 'Notification',
+      'employee_chats': 'Chats',
+      'search_chats': 'Search chats',
+      'chat_empty_title': 'No chats yet',
+      'chat_empty_desc':
+          'Your direct and group conversations with HR will appear here.',
+      'chat_load_error': 'Could not load chats',
+      'chat_input_placeholder': 'Write your message',
+      'chat_send_error': 'Could not send the message',
+      'chat_group_label': 'Group',
+      'chat_direct_label': 'Direct chat',
+      'chat_members': 'members',
+      'chat_no_messages': 'No messages yet',
+      'chat_new_message_arrived': 'A new message has arrived',
+      'chat_time_now': 'Now',
+      'chat_time_minutes_ago': '{count}m ago',
+      'chat_time_hours_ago': '{count}h ago',
+      'walkie_title': 'Walkie-Talkie',
+      'walkie_subtitle': 'Fast voice communication for operational groups',
+      'walkie_search_groups': 'Search voice groups',
+      'walkie_groups_count': 'Available groups',
+      'walkie_connection_status': 'Connection status',
+      'walkie_status_ready': 'Ready',
+      'walkie_status_connected': 'Connected',
+      'walkie_can_listen': 'Listen',
+      'walkie_can_speak': 'Speak',
+      'walkie_can_initiate': 'Start call',
+      'walkie_priority': 'Priority',
+      'walkie_default_group_desc':
+          'A live voice group ready for instant workplace communication.',
+      'walkie_connect': 'Connect',
+      'walkie_connecting': 'Connecting...',
+      'walkie_disconnect': 'Disconnect',
+      'walkie_connected': 'Walkie-talkie session is ready',
+      'walkie_disconnected': 'Walkie-talkie session ended',
+      'walkie_connect_error': 'Could not start walkie-talkie session',
+      'walkie_hold_to_talk': 'Hold to talk',
+      'walkie_talking_now': 'You are talking now',
+      'walkie_session_info': 'Session info',
+      'walkie_provider': 'Provider',
+      'walkie_room_name': 'Room',
+      'walkie_identity': 'Identity',
+      'walkie_not_connected_yet': 'Not connected yet',
+      'walkie_empty_title': 'No voice groups',
+      'walkie_empty_desc': 'Any voice groups assigned by HR will appear here.',
+      'walkie_load_error': 'Could not load walkie-talkie groups',
       'no_notifications': 'No notifications',
+      'walkie_permission_required':
+          'Microphone permission is required to use walkie-talkie',
+      'walkie_connect_live_error': 'Could not connect to the live audio room',
+      'walkie_microphone_enable_error':
+          'Could not enable microphone inside the session',
+      'walkie_room_ready': 'Connected to the live audio room successfully',
+      'walkie_participants': 'Participants',
+      'walkie_no_participants': 'No other participants are in this room yet',
+      'walkie_you': 'You',
+      'walkie_remote': 'Remote participant',
+          'walkie_audio_live': 'Audio is live now',
+          'walkie_audio_muted': 'Microphone muted',
+          'walkie_listening_only': 'Listening mode',
+          'walkie_press_and_hold_help':
+              'Press and hold to send your voice to the group',
+          'walkie_notification_permission_required':
+              'Allow notifications so walkie-talkie can stay active in the background with a persistent notification.',
+          'walkie_background_service_title': 'Walkie-Talkie Active',
+          'walkie_background_connected_group':
+              'Connected to {group} and ready to receive audio in the background.',
+          'walkie_background_you_talking_group':
+              'You are talking now in {group}.',
+          'walkie_background_remote_speaking':
+              '{name} is talking now in {group}.',
+          'walkie_background_multiple_speakers':
+              '{count} participants are talking now in {group}.',
       'all_notifications': 'All',
       'unread_notifications': 'Unread',
       'read_notifications': 'Read',
@@ -1082,12 +1256,14 @@ class Translations {
       'approvals': 'Approvals',
       'reports': 'Reports',
       'profile': 'Profile',
+      'more': 'More',
       'settings': 'Settings',
       'logout': 'Logout',
       'confirm_logout': 'Are you sure you want to logout?',
       'logout_success': 'Logout successful',
       'dashboard': 'Dashboard',
       'quick_actions': 'Quick Actions',
+      'admin_section_title': 'Admin',
       'quick_actions_section_attendance_shifts': 'Attendance & Shifts',
       'quick_actions_section_requests_approvals': 'Requests & Approvals',
       'quick_actions_section_tasks_finance': 'Tasks & Finance',
@@ -1116,6 +1292,7 @@ class Translations {
       'tasks_status_inprogress': 'In progress',
       'tasks_status_awaiting': 'Awaiting approval',
       'tasks_status_completed': 'Completed',
+      'tasks_mark_inprogress': 'In progress',
       'tasks_mark_done': 'Mark as done',
       'tasks_details_title': 'Task details',
       'task_creator_title': 'Task Management',
@@ -1127,11 +1304,17 @@ class Translations {
       'task_creator_task_description': 'Description',
       'task_creator_due': 'Due date',
       'task_creator_send': 'Create',
+      'task_creator_duplicate': 'Duplicate',
+      'task_creator_template_banner':
+          'Task copied. Select employees and due date, then tap Create.',
+      'task_creator_template_clear': 'Clear',
+      'task_creator_template_ready': 'Task is ready to duplicate',
       'task_creator_approve': 'Approve',
       'task_creator_cancel': 'Cancel',
       'task_creator_no_access': 'You do not have access',
       'task_creator_auto_approve': 'Auto approve',
-      'task_creator_auto_approve_hint': 'When the employee completes the task, it will be marked as completed without waiting for management approval',
+      'task_creator_auto_approve_hint':
+          'When the employee completes the task, it will be marked as completed without waiting for management approval',
       'task_creator_dashboard': 'Tasks summary',
       'task_creator_stats_total': 'Total',
       'task_creator_stats_completed': 'Completed',
@@ -1634,7 +1817,8 @@ class Translations {
       'choose_action': 'Choose an action:',
       'error_processing_attachment_with_error':
           'Error processing attachment: {error}',
-      'write_permission_required': 'Write permission is required to download files',
+      'write_permission_required':
+          'Write permission is required to download files',
       'cannot_open_file_type': 'Cannot open this file type',
       'attachment_url_not_available': 'Attachment URL is not available',
       'loading_request_details': 'Loading request details...',
@@ -1661,7 +1845,8 @@ class Translations {
           'This step saves your face data so you can use it for attendance.',
       'face_fix_face_now': 'Hold your face steady now',
       'face_processing_in_progress': 'Process in progress',
-      'face_processing_wait': 'Please wait and do not close this screen until the process completes.',
+      'face_processing_wait':
+          'Please wait and do not close this screen until the process completes.',
       'face_challenge_title': 'Live Challenge',
       'face_challenge_progress': 'Challenges: {done}/{required}',
       'face_guidance_title': 'Quick guidance',
@@ -1687,7 +1872,8 @@ class Translations {
       'face_reset_success': 'Face template reset successfully',
       'face_reset_failed': 'Reset failed',
       'face_mgmt_title': 'Employee Face Biometrics Management',
-      'face_mgmt_description': 'Manage, enroll, and delete employee face biometrics.',
+      'face_mgmt_description':
+          'Manage, enroll, and delete employee face biometrics.',
       'face_registered': 'Registered',
       'face_not_registered': 'Not registered',
       'face_mgmt_update_optional': 'View/Update face',
@@ -1697,7 +1883,8 @@ class Translations {
       'face_mgmt_confirm_delete_title': 'Confirm face deletion',
       'face_mgmt_confirm_delete_message':
           'Are you sure you want to delete the face template for {name} ({employeeNumber})?',
-      'face_mgmt_deleted_success': 'Face template deleted and status set to "Not registered".',
+      'face_mgmt_deleted_success':
+          'Face template deleted and status set to "Not registered".',
       'face_mgmt_delete_failed': 'Failed to delete face template',
       'face_mgmt_login_enroll_required':
           'You must enroll your face before accessing the system.',
@@ -1714,7 +1901,8 @@ class Translations {
       'capture_and_enroll': 'Capture & enroll',
       'biometric_registration': 'Biometric Registration',
       'biometric_settings': 'Biometric Settings',
-      'error_checking_biometric_with_error': 'Error checking biometrics: {error}',
+      'error_checking_biometric_with_error':
+          'Error checking biometrics: {error}',
       'biometric_already_registered':
           'Biometric already registered for this employee',
       'device_biometric_not_setup':
@@ -1732,7 +1920,8 @@ class Translations {
       'face_registered_success': 'Face registered successfully',
       'error_registering_face_with_error': 'Error registering face: {error}',
       'biometric_deleted_success': 'Biometric deleted successfully',
-      'error_deleting_biometric_with_error': 'Error deleting biometric: {error}',
+      'error_deleting_biometric_with_error':
+          'Error deleting biometric: {error}',
       'choose_biometric_method': 'Choose a biometric method',
       'register_fingerprint': 'Register fingerprint',
       'register_face': 'Register face',
@@ -1750,7 +1939,8 @@ class Translations {
       'available': 'Available',
       'not_available': 'Not available',
       'available_biometric_types': 'Available biometric types',
-      'no_biometric_types_available': 'No biometric types available on this device',
+      'no_biometric_types_available':
+          'No biometric types available on this device',
       'enable_biometric_instructions': 'Enable biometrics instructions',
       'instruction_device_support_title':
           '1. Make sure your device supports biometrics',
@@ -1794,18 +1984,25 @@ class Translations {
       'liveness_waiting_face': 'Place your face clearly inside the frame',
       'liveness_challenge_blink': 'Please blink twice naturally',
       'liveness_challenge_smile': 'Please smile naturally',
-      'liveness_challenge_mouth': 'Please open your mouth slightly (as saying "Ah")',
-      'liveness_challenge_tilt_left': 'Please tilt your head slightly to the left',
-      'liveness_challenge_tilt_right': 'Please tilt your head slightly to the right',
-      'liveness_challenge_tilt_up': 'Please tilt your head slightly up (look up)',
-      'liveness_challenge_tilt_down': 'Please tilt your head slightly down (look down)',
+      'liveness_challenge_mouth':
+          'Please open your mouth slightly (as saying "Ah")',
+      'liveness_challenge_tilt_left':
+          'Please tilt your head slightly to the left',
+      'liveness_challenge_tilt_right':
+          'Please tilt your head slightly to the right',
+      'liveness_challenge_tilt_up':
+          'Please tilt your head slightly up (look up)',
+      'liveness_challenge_tilt_down':
+          'Please tilt your head slightly down (look down)',
       'liveness_analyzing': 'Analyzing liveness & security...',
       'liveness_passed': 'Identity verified successfully ✅',
-      'liveness_failed_spoof': '⚠️ Spoof attack detected! Please use your real face directly in front of the camera',
+      'liveness_failed_spoof':
+          '⚠️ Spoof attack detected! Please use your real face directly in front of the camera',
       'liveness_failed_timeout': 'Check timed out, please try again',
       'liveness_failed_generic': 'Liveness check failed, please try again',
       'liveness_progress': 'Progress: {done} of {total}',
-      'liveness_security_note': 'For security, you will be asked to perform random actions to verify your real presence',
+      'liveness_security_note':
+          'For security, you will be asked to perform random actions to verify your real presence',
     },
   };
 

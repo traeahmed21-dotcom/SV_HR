@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'dart:ui' as ui;
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -17,22 +18,22 @@ import '../services/api_service.dart';
 import '../services/language_service.dart';
 import '../services/translations.dart';
 import '../services/approval_permission_service.dart';
+import 'app_shell.dart';
 import 'attendance_screen.dart';
 import 'attendance_history_screen.dart';
-import 'requests_screen.dart';
 import 'approvals_screen.dart'
     if (dart.library.html) 'approvals_screen_web_stub.dart';
 import 'profile_screen.dart';
 import 'login_screen.dart';
 import 'notifications_screen.dart';
-import 'payroll_screen.dart';
 import 'shift_info_screen.dart';
 import 'salary_details_screen.dart';
-import 'user_tasks_screen.dart';
+import 'walkie_talkie_screen.dart';
 import 'task_creator_screen.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/ads_slider.dart';
 import '../widgets/app_notice_banner.dart';
+import '../widgets/custom_card.dart';
 import '../theme/app_semantic_colors.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -61,6 +62,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Dashboard Data
   List<request_models.EmployeeRequest> _recentRequests = [];
   int _unreadNotificationsCount = 0;
+  int _unreadChatsCount = 0;
   int _newTasksCount = 0;
   PendingCounts? _pendingCounts;
   int _pendingApprovalsCount = 0;
@@ -152,7 +154,8 @@ class _HomeScreenState extends State<HomeScreen> {
       );
 
       var effectivePermission = ApprovalPermissionService.currentCached;
-      final embeddedFromEmployee = widget.employeeData?.embeddedApprovalPermission;
+      final embeddedFromEmployee =
+          widget.employeeData?.embeddedApprovalPermission;
       if (embeddedFromEmployee != null &&
           embeddedFromEmployee.isValid &&
           embeddedFromEmployee.verifySignatureIntegrity()) {
@@ -199,7 +202,13 @@ class _HomeScreenState extends State<HomeScreen> {
           return 0;
         }),
 
-        // 3. Pending Counts (Default to null)
+        // 3. Chat Unread Count (Default to 0)
+        ApiService.getChatUnreadCount(clientId, empId).catchError((e) {
+          _log('Error fetching chat unread count: $e');
+          return 0;
+        }),
+
+        // 4. Pending Counts (Default to null)
         ApiService.getPendingCounts(clientId, empId).catchError((e) {
           _log('Error fetching pending counts: $e');
           return null;
@@ -227,7 +236,8 @@ class _HomeScreenState extends State<HomeScreen> {
         }),
 
         // 6. Shifts (to compute working days)
-        ApiService.getEmployeeShiftsAll(clientId, widget.employeeData!.employeeNumber)
+        ApiService.getEmployeeShiftsAll(
+                clientId, widget.employeeData!.employeeNumber)
             .catchError((e) {
           _log('Error fetching shifts: $e');
           return <ShiftData>[];
@@ -301,13 +311,16 @@ class _HomeScreenState extends State<HomeScreen> {
         // 3. Notifications Count
         _unreadNotificationsCount = results[2] as int;
 
-        // 4. Pending Counts
-        _pendingCounts = results[3] as PendingCounts?;
+        // 4. Chat unread count
+        _unreadChatsCount = results[3] as int;
 
-        _newTasksCount = results[10] as int;
+        // 5. Pending Counts
+        _pendingCounts = results[4] as PendingCounts?;
 
-        // 5. Pending Approvals Count — STRICT SECURITY GATE
-        final approvalsResponse = results[4] as Map<String, dynamic>;
+        _newTasksCount = results[11] as int;
+
+        // 6. Pending Approvals Count — STRICT SECURITY GATE
+        final approvalsResponse = results[5] as Map<String, dynamic>;
         final wasSkipped = approvalsResponse['_Skip_'] == true;
         if (wasSkipped) {
           _pendingApprovalsCount = 0;
@@ -351,7 +364,8 @@ class _HomeScreenState extends State<HomeScreen> {
                 finalPerm.verifySignatureIntegrity() &&
                 finalPerm.isApprover;
             try {
-              ApprovalPermissionService.persistSecurely(finalPerm.toSecureJson());
+              ApprovalPermissionService.persistSecurely(
+                  finalPerm.toSecureJson());
             } catch (_) {}
           } else {
             _pendingApprovalsCount = 0;
@@ -368,13 +382,14 @@ class _HomeScreenState extends State<HomeScreen> {
             _cachedApprovalPermission = finalPerm;
             ApprovalPermissionService.updateCached(finalPerm);
             try {
-              ApprovalPermissionService.persistSecurely(finalPerm.toSecureJson());
+              ApprovalPermissionService.persistSecurely(
+                  finalPerm.toSecureJson());
             } catch (_) {}
           }
         }
 
         // 6. My Pending Requests Count (Calculated from recent history)
-        final myPendingResponse = results[5] as Map<String, dynamic>;
+        final myPendingResponse = results[6] as Map<String, dynamic>;
         if (myPendingResponse['Success'] == true) {
           final List<dynamic> data = myPendingResponse['Data'] ?? [];
           int calculatedPending = 0;
@@ -389,9 +404,9 @@ class _HomeScreenState extends State<HomeScreen> {
           _myPendingRequestsCount = 0;
         }
 
-        _shifts = (results[6] as List).whereType<ShiftData>().toList();
+        _shifts = (results[7] as List).whereType<ShiftData>().toList();
 
-        final taskCreatorResp = results[7] as Map<String, dynamic>;
+        final taskCreatorResp = results[8] as Map<String, dynamic>;
         final taskOk = taskCreatorResp['Success'] == true;
         final List taskData = (taskCreatorResp['Data'] as List?) ?? const [];
         final perm = taskCreatorResp['Permission'];
@@ -400,10 +415,10 @@ class _HomeScreenState extends State<HomeScreen> {
         _managedEmployeesCount = taskOk ? taskData.length : 0;
 
         _mobileAds =
-            (results[8] as List).whereType<MobileAdvertisement>().toList();
-        final notices = (results[9] as List).whereType<AppNotice>().toList();
+            (results[9] as List).whereType<MobileAdvertisement>().toList();
+        final notices = (results[10] as List).whereType<AppNotice>().toList();
         _homeNotice = notices.isNotEmpty ? notices.first : null;
-        _companyHolidays = (results[11] as List)
+        _companyHolidays = (results[12] as List)
             .whereType<api_models.CompanyHoliday>()
             .toList();
 
@@ -618,8 +633,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       Padding(
                         padding: const EdgeInsets.fromLTRB(18, 16, 18, 8),
                         child: Align(
-                          alignment:
-                              isBirthday ? Alignment.center : Alignment.centerRight,
+                          alignment: isBirthday
+                              ? Alignment.center
+                              : Alignment.centerRight,
                           child: Text(
                             messageText,
                             textAlign:
@@ -628,8 +644,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               height: 1.6,
                               fontSize: 15,
                               color: scheme.onSurface,
-                              fontWeight:
-                                  isBirthday ? FontWeight.w600 : FontWeight.w500,
+                              fontWeight: isBirthday
+                                  ? FontWeight.w600
+                                  : FontWeight.w500,
                             ),
                           ),
                         ),
@@ -868,16 +885,14 @@ class _HomeScreenState extends State<HomeScreen> {
       await prefs.setBool('is_logged_in', false);
 
       if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
           (route) => false,
         );
       }
     } catch (e) {
       if (mounted) {
-        Navigator.pushAndRemoveUntil(
-          context,
+        Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
           MaterialPageRoute(builder: (context) => const LoginScreen()),
           (route) => false,
         );
@@ -1007,7 +1022,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   const SizedBox(height: 12),
                 ],
                 _buildWelcomeCard(lang),
-                const SizedBox(height: 24),
+                const SizedBox(height: 14),
+                _buildKpiStrip(lang),
+                const SizedBox(height: 22),
                 _buildAttendanceCard(lang),
                 if (_mobileAds.isNotEmpty) ...[
                   const SizedBox(height: 16),
@@ -1029,6 +1046,143 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildKpiStrip(String lang) {
+    final scheme = Theme.of(context).colorScheme;
+    final semantic = Theme.of(context).extension<AppSemanticColors>();
+    if (semantic == null) return const SizedBox.shrink();
+    if (widget.employeeData == null) return const SizedBox.shrink();
+
+    final clientId = widget.employeeData!.clientID;
+    final employeeId = widget.employeeData!.employeeID;
+
+    final pendingCounts = _pendingCounts;
+    final pendingRequests = pendingCounts == null
+        ? 0
+        : (pendingCounts.leave + pendingCounts.loan + pendingCounts.other);
+
+    final cached = _cachedApprovalPermission;
+    bool secureIsApprover = false;
+    if (cached != null &&
+        cached.isValid &&
+        cached.verifySignatureIntegrity() &&
+        cached.clientId == widget.employeeData?.clientID &&
+        cached.employeeId == widget.employeeData?.employeeID &&
+        cached.employeeNumber == widget.employeeData?.employeeNumber) {
+      secureIsApprover = cached.isApprover;
+    } else if (widget.employeeData?.hasValidSecureApprovalPermission == true) {
+      secureIsApprover = widget.employeeData!.isApprover;
+    }
+    final showApprovals = secureIsApprover && _hasApprovalAccess;
+
+    final items = <Widget>[
+      _KpiTile(
+        label: Translations.getText('unread_notifications', lang),
+        value: _unreadNotificationsCount,
+        icon: Icons.notifications_outlined,
+        toneColor: scheme.primary,
+        onTap: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NotificationsScreen(
+                clientId: clientId,
+                employeeId: employeeId,
+                employeeNumber: widget.employeeData!.employeeNumber,
+              ),
+            ),
+          );
+          _loadAllData();
+        },
+      ),
+      _KpiTile(
+        label: Translations.getText('requests', lang),
+        value: pendingRequests,
+        icon: Icons.assignment_outlined,
+        toneColor: scheme.tertiary,
+        onTap: () => AppShell.selectTab(context, 1),
+      ),
+      if (showApprovals)
+        _KpiTile(
+          label: Translations.getText('pending_approvals', lang),
+          value: _pendingApprovalsCount,
+          icon: Icons.approval_outlined,
+          toneColor: scheme.secondary,
+          onTap: () async {
+            await Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ApprovalsScreen(
+                  employeeId: widget.employeeId,
+                  employeeData: widget.employeeData!,
+                ),
+              ),
+            );
+            _loadAllData();
+          },
+        ),
+      _KpiTile(
+        label: Translations.getText('tasks_title', lang),
+        value: _newTasksCount,
+        icon: Icons.task_alt_outlined,
+        toneColor: scheme.primary,
+        onTap: () => AppShell.selectTab(context, 3),
+      ),
+      _KpiTile(
+        label: Translations.getText('employee_chats', lang),
+        value: _unreadChatsCount,
+        icon: Icons.forum_outlined,
+        toneColor: semantic.info,
+        onTap: () => AppShell.selectTab(context, 2),
+      ),
+    ];
+
+    return _buildBorderedSectionCard(
+      padding: const EdgeInsets.fromLTRB(14, 14, 14, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  Translations.getText('dashboard', lang),
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w800,
+                      ),
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
+                  borderRadius: BorderRadius.circular(999),
+                  border: null,
+                ),
+                child: Text(
+                  Translations.getText('recent_activities', lang),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            height: 86,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: items.length,
+              separatorBuilder: (_, __) => const SizedBox(width: 12),
+              itemBuilder: (context, index) => items[index],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildWelcomeCard(String lang) {
     final scheme = Theme.of(context).colorScheme;
     return Container(
@@ -1041,10 +1195,7 @@ class _HomeScreenState extends State<HomeScreen> {
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: scheme.onPrimary.withValues(alpha: 0.22),
-          width: 1.25,
-        ),
+        border: null,
         boxShadow: [
           BoxShadow(
             color: scheme.primary.withValues(alpha: 0.18),
@@ -1079,8 +1230,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      Translations.getTextWithParams(
-                          'welcome_user', lang, {'name': _currentEmployee!.name}),
+                      Translations.getTextWithParams('welcome_user', lang,
+                          {'name': _currentEmployee!.name}),
                       maxLines: isSmall ? 1 : 2,
                       overflow: TextOverflow.ellipsis,
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
@@ -1107,7 +1258,7 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
-  }
+}
 
   Widget _buildAttendanceCard(String lang) {
     final hasCheckedIn = _attendanceStats['hasCheckedIn'] ?? false;
@@ -1127,10 +1278,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 decoration: BoxDecoration(
                   color: semantic.infoContainer.withValues(alpha: 0.7),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: semantic.info.withValues(alpha: 0.22),
-                    width: 1,
-                  ),
+                  border: null,
                 ),
                 child: Icon(Icons.access_time, size: 20, color: semantic.info),
               ),
@@ -1232,12 +1380,7 @@ class _HomeScreenState extends State<HomeScreen> {
               end: Alignment.bottomRight,
             ),
             borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: isEnabled
-                  ? bg.withValues(alpha: 0.35)
-                  : scheme.outlineVariant.withValues(alpha: 0.6),
-              width: 1.2,
-            ),
+        border: null,
             boxShadow: [
               if (isEnabled)
                 BoxShadow(
@@ -1299,25 +1442,13 @@ class _HomeScreenState extends State<HomeScreen> {
     EdgeInsetsGeometry padding = const EdgeInsets.all(20),
     EdgeInsetsGeometry margin = const EdgeInsets.symmetric(vertical: 4),
   }) {
-    final scheme = Theme.of(context).colorScheme;
-    return Container(
+    return CustomCard(
       margin: margin,
-      decoration: BoxDecoration(
-        color: scheme.surface,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: scheme.outlineVariant.withValues(alpha: 0.9),
-          width: 1.25,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: scheme.shadow.withValues(alpha: 0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Padding(padding: padding, child: child),
+      padding: padding,
+      borderRadius: 24,
+      gloss: false,
+      enableHover: false,
+      child: child,
     );
   }
 
@@ -1341,45 +1472,10 @@ class _HomeScreenState extends State<HomeScreen> {
     final showApprovalsCard = secureIsApprover && _hasApprovalAccess;
     return LayoutBuilder(
       builder: (context, constraints) {
-        const childAspectRatio = 0.88;
+        final w = constraints.maxWidth;
+        final childAspectRatio = w < 360 ? 2.25 : (w < 430 ? 2.4 : 2.7);
         const horizontalSpacing = 16.0;
         const verticalSpacing = 16.0;
-
-        Widget buildGroupSectionCard({
-          required String title,
-          required List<Widget> actions,
-        }) {
-          return _buildBorderedSectionCard(
-            padding: const EdgeInsets.fromLTRB(20, 18, 20, 20),
-            margin: EdgeInsets.zero,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Align(
-                  alignment: Alignment.center,
-                  child: Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w800,
-                          color: scheme.onSurface,
-                        ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                GridView.count(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  crossAxisCount: 2,
-                  crossAxisSpacing: horizontalSpacing,
-                  mainAxisSpacing: verticalSpacing,
-                  childAspectRatio: childAspectRatio,
-                  children: actions,
-                ),
-              ],
-            ),
-          );
-        }
 
         final attendanceAndShiftsActions = <Widget>[
           _buildActionCard(
@@ -1431,23 +1527,64 @@ class _HomeScreenState extends State<HomeScreen> {
                     (_pendingCounts?.leave ?? 0) +
                     (_pendingCounts?.other ?? 0))
                 : _myPendingRequestsCount,
+            onTap: () => AppShell.selectTab(context, 1),
+          ),
+        ];
+
+        final tasksAndFinanceActions = <Widget>[
+          _buildActionCard(
+            title: Translations.getText('tasks_title', lang),
+            icon: Icons.task_alt_rounded,
+            color: scheme.primary,
+            badgeCount: _newTasksCount,
+            onTap: () => AppShell.selectTab(context, 3),
+          ),
+          _buildActionCard(
+            title: Translations.getText('employee_chats', lang),
+            icon: Icons.forum_rounded,
+            color: scheme.secondary,
+            badgeCount: _unreadChatsCount,
+            onTap: () => AppShell.selectTab(context, 2),
+          ),
+          _buildActionCard(
+            title: Translations.getText('walkie_title', lang),
+            icon: Icons.graphic_eq_rounded,
+            color: scheme.primary,
             onTap: () async {
               await Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => RequestsScreen(
-                    employeeId: widget.employeeId,
-                    employeeData: widget.employeeData!,
+                  builder: (context) => WalkieTalkieScreen(
+                    clientId: widget.employeeData!.clientID,
+                    employeeId: widget.employeeData!.employeeID,
+                    employeeName: widget.employeeData!.name,
                   ),
                 ),
               );
               _loadAllData();
             },
           ),
+          _buildActionCard(
+            title: Translations.getText('salary_details_title', lang),
+            icon: Icons.payments,
+            color: scheme.tertiary,
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SalaryDetailsScreen(
+                  employeeId: widget.employeeData!.employeeID,
+                  clientId: widget.employeeData!.clientID,
+                ),
+              ),
+            ),
+          ),
+        ];
+
+        final adminActions = <Widget>[
           if (showApprovalsCard)
             _buildActionCard(
               title: Translations.getText('approvals', lang),
-              icon: Icons.approval,
+              icon: Icons.admin_panel_settings_rounded,
               color: scheme.secondary,
               badgeCount: _pendingApprovalsCount,
               onTap: () async {
@@ -1463,27 +1600,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 _loadAllData();
               },
             ),
-        ];
-
-        final tasksAndFinanceActions = <Widget>[
-          _buildActionCard(
-            title: Translations.getText('tasks_title', lang),
-            icon: Icons.task_alt_rounded,
-            color: scheme.primary,
-            badgeCount: _newTasksCount,
-            onTap: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => UserTasksScreen(
-                    clientId: widget.employeeData!.clientID,
-                    employeeId: widget.employeeData!.employeeID,
-                  ),
-                ),
-              );
-              _loadAllData();
-            },
-          ),
           if (_hasTaskCreatorAccess)
             _buildActionCard(
               title: Translations.getText('task_creator_title', lang),
@@ -1504,48 +1620,84 @@ class _HomeScreenState extends State<HomeScreen> {
                 _loadAllData();
               },
             ),
-          _buildActionCard(
-            title: Translations.getText('salary_details_title', lang),
-            icon: Icons.payments,
-            color: scheme.tertiary,
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SalaryDetailsScreen(
-                  employeeId: widget.employeeData!.employeeID,
-                  clientId: widget.employeeData!.clientID,
-                ),
-              ),
-            ),
-          ),
         ];
+        final allActions = <Widget>[
+          ...attendanceAndShiftsActions,
+          ...requestsAndApprovalsActions,
+          ...tasksAndFinanceActions,
+        ];
+
+        final actionsGrid = Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 2),
+          child: GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: horizontalSpacing,
+            mainAxisSpacing: verticalSpacing,
+            childAspectRatio: childAspectRatio,
+            children: allActions,
+          ),
+        );
+
+        if (adminActions.isEmpty) {
+          return actionsGrid;
+        }
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            buildGroupSectionCard(
-              title: Translations.getText(
-                'quick_actions_section_attendance_shifts',
-                lang,
+            CustomCard(
+              margin: const EdgeInsets.fromLTRB(2, 0, 2, 16),
+              padding: const EdgeInsets.all(16),
+              borderRadius: 24,
+              enableHover: false,
+              gloss: false,
+              color: scheme.secondaryContainer.withValues(alpha: 0.35),
+              boxShadow: const [],
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: scheme.secondaryContainer,
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Icon(
+                          Icons.admin_panel_settings_rounded,
+                          color: scheme.onSecondaryContainer,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          Translations.getText('admin_section_title', lang),
+                          style: Theme.of(context)
+                              .textTheme
+                              .titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    crossAxisSpacing: horizontalSpacing,
+                    mainAxisSpacing: verticalSpacing,
+                    childAspectRatio: childAspectRatio,
+                    children: adminActions,
+                  ),
+                ],
               ),
-              actions: attendanceAndShiftsActions,
             ),
-            const SizedBox(height: 16),
-            buildGroupSectionCard(
-              title: Translations.getText(
-                'quick_actions_section_requests_approvals',
-                lang,
-              ),
-              actions: requestsAndApprovalsActions,
-            ),
-            const SizedBox(height: 16),
-            buildGroupSectionCard(
-              title: Translations.getText(
-                'quick_actions_section_tasks_finance',
-                lang,
-              ),
-              actions: tasksAndFinanceActions,
-            ),
+            actionsGrid,
           ],
         );
       },
@@ -1604,7 +1756,8 @@ class _HomeScreenState extends State<HomeScreen> {
       return keys[m - 1];
     }
 
-    final title = '${Translations.getText(monthKey(month.month), lang)} ${month.year}';
+    final title =
+        '${Translations.getText(monthKey(month.month), lang)} ${month.year}';
     final workBg = semantic.success.withValues(alpha: 0.20);
     final offBg = scheme.error.withValues(alpha: 0.20);
     final unknownBg = scheme.surfaceContainerHighest.withValues(alpha: 0.25);
@@ -1652,8 +1805,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     IconButton(
                       onPressed: () {
                         setState(() {
-                          _calendarMonth =
-                              DateTime(_calendarMonth.year, _calendarMonth.month - 1);
+                          _calendarMonth = DateTime(
+                              _calendarMonth.year, _calendarMonth.month - 1);
                         });
                         _reloadCompanyHolidaysForMonth();
                       },
@@ -1676,8 +1829,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     IconButton(
                       onPressed: () {
                         setState(() {
-                          _calendarMonth =
-                              DateTime(_calendarMonth.year, _calendarMonth.month + 1);
+                          _calendarMonth = DateTime(
+                              _calendarMonth.year, _calendarMonth.month + 1);
                         });
                         _reloadCompanyHolidaysForMonth();
                       },
@@ -1730,58 +1883,55 @@ class _HomeScreenState extends State<HomeScreen> {
                 Padding(
                   padding: const EdgeInsets.fromLTRB(4, 2, 4, 12),
                   child: Row(
-                    children: headers
-                        .asMap()
-                        .entries
-                        .map(
-                          (entry) {
-                            final idx = entry.key;
-                            final isFirst = idx == 0;
-                            final isLast = idx == headers.length - 1;
-                            return Expanded(
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 7),
-                                margin: EdgeInsets.only(
-                                  left: isFirst ? 0 : 1.0,
-                                  right: isLast ? 0 : 0,
-                                ),
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.vertical(
-                                    top: const Radius.circular(10),
-                                    bottom: const Radius.circular(6),
-                                  ),
-                                  gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      scheme.primary.withValues(alpha: 0.14),
-                                      scheme.primaryContainer.withValues(alpha: 0.10),
-                                    ],
-                                  ),
-                                  border: Border(
-                                    bottom: BorderSide(
-                                      color: scheme.primary.withValues(alpha: 0.25),
-                                      width: 2,
-                                    ),
-                                  ),
-                                ),
-                                child: Center(
-                                  child: Text(
-                                    entry.value,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w900,
-                                      color: scheme.primary.withValues(alpha: 0.92),
-                                      fontSize: 12.5,
-                                      letterSpacing: 0.4,
-                                      height: 1.15,
-                                    ),
-                                  ),
+                    children: headers.asMap().entries.map(
+                      (entry) {
+                        final idx = entry.key;
+                        final isFirst = idx == 0;
+                        final isLast = idx == headers.length - 1;
+                        return Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 7),
+                            margin: EdgeInsets.only(
+                              left: isFirst ? 0 : 1.0,
+                              right: isLast ? 0 : 0,
+                            ),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.vertical(
+                                top: const Radius.circular(10),
+                                bottom: const Radius.circular(6),
+                              ),
+                              gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  scheme.primary.withValues(alpha: 0.14),
+                                  scheme.primaryContainer
+                                      .withValues(alpha: 0.10),
+                                ],
+                              ),
+                              border: Border(
+                                bottom: BorderSide(
+                                  color: scheme.primary.withValues(alpha: 0.25),
+                                  width: 2,
                                 ),
                               ),
-                            );
-                          },
-                        )
-                        .toList(),
+                            ),
+                            child: Center(
+                              child: Text(
+                                entry.value,
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w900,
+                                  color: scheme.primary.withValues(alpha: 0.92),
+                                  fontSize: 12.5,
+                                  letterSpacing: 0.4,
+                                  height: 1.15,
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ).toList(),
                   ),
                 ),
                 LayoutBuilder(
@@ -2141,10 +2291,8 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-
   Widget _buildRecentRequestsCard(String lang) {
     final scheme = Theme.of(context).colorScheme;
-    final semantic = Theme.of(context).extension<AppSemanticColors>()!;
     return _buildBorderedSectionCard(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
       child: Column(
@@ -2153,14 +2301,12 @@ class _HomeScreenState extends State<HomeScreen> {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
                   color: scheme.tertiaryContainer.withValues(alpha: 0.55),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: scheme.tertiary.withValues(alpha: 0.22),
-                    width: 1,
-                  ),
+                  border: null,
                 ),
                 child: Icon(
                   Icons.assignment_rounded,
@@ -2185,10 +2331,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   decoration: BoxDecoration(
                     color: scheme.primary.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),
-                    border: Border.all(
-                      color: scheme.primary.withValues(alpha: 0.25),
-                      width: 1,
-                    ),
+                    border: null,
                   ),
                   child: Text(
                     '${_recentRequests.length}',
@@ -2209,10 +2352,7 @@ class _HomeScreenState extends State<HomeScreen> {
               decoration: BoxDecoration(
                 color: scheme.surfaceContainerHighest.withValues(alpha: 0.35),
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: scheme.outlineVariant.withValues(alpha: 0.85),
-                  width: 1.2,
-                ),
+                border: null,
               ),
               child: Column(
                 children: [
@@ -2238,10 +2378,7 @@ class _HomeScreenState extends State<HomeScreen> {
             Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(18),
-                border: Border.all(
-                  color: scheme.outlineVariant.withValues(alpha: 0.55),
-                  width: 1.1,
-                ),
+                border: null,
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(18),
@@ -2656,148 +2793,140 @@ class _ActionCardWidgetState extends State<_ActionCardWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final pressScale = _isPressed ? 0.97 : (_isHovered ? 1.01 : 1.0);
+    final hoverT = _isHovered ? 1.0 : 0.0;
+    final pressScale = _isPressed ? 0.99 : (1.0 + 0.008 * hoverT);
+    final lift = _isPressed ? -1.0 : (-3.0 * hoverT);
+    final base = widget.scheme.surface;
+    final isRtl = Directionality.of(context) == ui.TextDirection.rtl;
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) {
-          setState(() => _isPressed = false);
-          widget.onTap();
-        },
-        onTapCancel: () => setState(() => _isPressed = false),
-        child: Semantics(
-          label: widget.title,
-          button: true,
-          enabled: true,
-          child: Stack(
-            clipBehavior: Clip.none,
-            fit: StackFit.expand,
-            children: [
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                decoration: BoxDecoration(
-                  color: widget.scheme.surface,
-                  borderRadius: BorderRadius.circular(22),
-                  border: Border.all(
-                    color: _isHovered
-                        ? widget.color.withValues(alpha: 0.55)
-                        : widget.scheme.outlineVariant
-                            .withValues(alpha: 0.88),
-                    width: _isHovered ? 1.5 : 1.2,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: (_isHovered ? widget.color : widget.scheme.shadow)
-                          .withValues(alpha: _isPressed ? 0.18 : 0.06),
-                      blurRadius: _isHovered ? 16 : 9,
-                      spreadRadius: _isPressed ? 1 : 0,
-                      offset: const Offset(0, 5),
+      child: Semantics(
+        label: widget.title,
+        button: true,
+        enabled: true,
+        child: Stack(
+          clipBehavior: Clip.none,
+          fit: StackFit.expand,
+          children: [
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 170),
+              curve: Curves.easeOutCubic,
+              decoration: BoxDecoration(
+                color: base,
+                borderRadius: BorderRadius.circular(18),
+                border: null,
+                boxShadow: [
+                  BoxShadow(
+                    color: widget.scheme.shadow.withValues(
+                      alpha: (widget.scheme.brightness == Brightness.dark
+                              ? 0.22
+                              : 0.06) +
+                          0.08 * hoverT,
                     ),
-                  ],
-                ),
-                transform: Matrix4.diagonal3Values(
-                  pressScale,
-                  pressScale,
-                  1.0,
-                ),
-                child: Material(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(22),
-                  clipBehavior: Clip.antiAlias,
-                  child: InkWell(
-                    onTap: widget.onTap,
-                    borderRadius: BorderRadius.circular(22),
-                    child: Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            curve: Curves.easeOut,
-                            padding: const EdgeInsets.all(12),
-                            constraints: const BoxConstraints(
-                              minWidth: 54,
-                              minHeight: 54,
+                    blurRadius: 14 + 10 * hoverT,
+                    spreadRadius: 0,
+                    offset: Offset(0, 8 + 2 * hoverT),
+                  ),
+                ],
+              ),
+              transform: Matrix4.identity()
+                ..translateByDouble(0.0, lift, 0.0, 1.0)
+                ..scaleByDouble(pressScale, pressScale, 1.0, 1.0),
+              child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(18),
+                clipBehavior: Clip.antiAlias,
+                child: InkWell(
+                  onTap: widget.onTap,
+                  onHighlightChanged: (v) => setState(() => _isPressed = v),
+                  borderRadius: BorderRadius.circular(18),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    child: Row(
+                      children: [
+                        AnimatedContainer(
+                          duration: const Duration(milliseconds: 170),
+                          curve: Curves.easeOutCubic,
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: widget.color.withValues(
+                              alpha: 0.10 + 0.06 * hoverT,
                             ),
-                            decoration: BoxDecoration(
-                              color: widget.color.withValues(
-                                alpha: _isHovered ? 0.2 : 0.14,
-                              ),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: widget.color.withValues(alpha: 0.26),
-                                width: 1.1,
-                              ),
-                            ),
-                            child: Icon(
-                              widget.icon,
-                              color: widget.color,
-                              size: 32,
-                            ),
+                            borderRadius: BorderRadius.circular(14),
                           ),
-                          const SizedBox(height: 12),
-                          Flexible(
-                            fit: FlexFit.loose,
-                            child: Text(
-                              widget.title,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.w800,
-                                    height: 1.25,
-                                    fontSize: 14,
-                                  ),
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                          child: Icon(
+                            widget.icon,
+                            color: widget.color,
+                            size: 22,
                           ),
-                        ],
-                      ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            widget.title,
+                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.15,
+                                  color: widget.scheme.onSurface,
+                                ),
+                            textAlign: TextAlign.start,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Icon(
+                          isRtl
+                              ? Icons.chevron_left_rounded
+                              : Icons.chevron_right_rounded,
+                          color:
+                              widget.scheme.onSurfaceVariant.withValues(alpha: 0.7),
+                          size: 22,
+                        ),
+                      ],
                     ),
                   ),
                 ),
               ),
-              if (widget.badgeCount != null && widget.badgeCount! > 0)
-                Positioned(
-                  top: -8,
-                  right: -8,
-                  child: Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
-                    decoration: BoxDecoration(
-                      color: widget.semantic.warning,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: widget.scheme.surface, width: 2.2),
-                      boxShadow: [
-                        BoxShadow(
-                          color:
-                              widget.semantic.warning.withValues(alpha: 0.32),
-                          blurRadius: 7,
-                          offset: const Offset(0, 3),
-                        ),
-                      ],
-                    ),
-                    child: Text(
-                      '${widget.badgeCount}',
-                      style: TextStyle(
-                        color: widget.semantic.onWarning,
-                        fontSize: 10.5,
-                        fontWeight: FontWeight.w900,
-                        height: 1.0,
+            ),
+            if (widget.badgeCount != null && widget.badgeCount! > 0)
+              PositionedDirectional(
+                top: -6,
+                end: -6,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: widget.semantic.warning,
+                    borderRadius: BorderRadius.circular(999),
+                    border: null,
+                    boxShadow: [
+                      BoxShadow(
+                        color: widget.semantic.warning.withValues(alpha: 0.32),
+                        blurRadius: 10,
+                        offset: const Offset(0, 6),
                       ),
+                    ],
+                  ),
+                  child: Text(
+                    '${widget.badgeCount}',
+                    style: TextStyle(
+                      color: widget.semantic.onWarning,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w900,
+                      height: 1.0,
                     ),
                   ),
                 ),
-            ],
-          ),
+              ),
+          ],
         ),
       ),
     );
@@ -2918,8 +3047,8 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: widget.primaryColor.withValues(
-                            alpha: _isPressed ? 0.42 : 0.28),
+                        color: widget.primaryColor
+                            .withValues(alpha: _isPressed ? 0.42 : 0.28),
                         blurRadius: _isPressed ? 18 : 12,
                         spreadRadius: _isPressed ? 1.5 : 0.5,
                         offset: Offset(0, _isPressed ? 4 : 3),
@@ -2976,9 +3105,7 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
                               ? widget.onSurface
                               : baseFg.withValues(alpha: 1.0))
                           : baseFg),
-                  fontSize: widget.isToday
-                      ? 16.0
-                      : (_isHovered ? 15.0 : 14.5),
+                  fontSize: widget.isToday ? 16.0 : (_isHovered ? 15.0 : 14.5),
                   letterSpacing: widget.isToday ? 0.3 : 0.2,
                   height: 1.1,
                 ),
@@ -2993,3 +3120,89 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
 }
 
 enum _AttendanceTone { primary, secondary }
+
+class _KpiTile extends StatelessWidget {
+  final String label;
+  final int value;
+  final IconData icon;
+  final Color toneColor;
+  final VoidCallback onTap;
+
+  const _KpiTile({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.toneColor,
+    required this.onTap,
+  });
+
+  String _format(int v) {
+    if (v > 99) return '99+';
+    return v.toString();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final bg = toneColor.withValues(alpha: 0.10);
+
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minWidth: 132, maxWidth: 160),
+      child: Material(
+        color: bg,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(18),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(18),
+              border: null,
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 36,
+                  height: 36,
+                  decoration: BoxDecoration(
+                    color: toneColor.withValues(alpha: 0.16),
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: Icon(icon, color: toneColor, size: 20),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _format(value),
+                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w900,
+                              height: 1.0,
+                              color: scheme.onSurface,
+                            ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

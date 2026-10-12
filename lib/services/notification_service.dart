@@ -3,6 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 class NotificationService {
+  static const int walkieNotificationId = 41021;
+  static const String _androidNotificationIcon = '@mipmap/launcher_icon';
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
@@ -25,7 +27,7 @@ class NotificationService {
 
       // إعدادات Android
       const AndroidInitializationSettings initializationSettingsAndroid =
-          AndroidInitializationSettings('@mipmap/ic_launcher');
+          AndroidInitializationSettings(_androidNotificationIcon);
 
       // إعدادات iOS
       const DarwinInitializationSettings initializationSettingsIOS =
@@ -81,8 +83,8 @@ class NotificationService {
         enableVibration: true,
         enableLights: true,
         color: Color(0xFF0EA5E9),
-        icon: '@mipmap/ic_launcher',
-        largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+        icon: _androidNotificationIcon,
+        largeIcon: DrawableResourceAndroidBitmap(_androidNotificationIcon),
         styleInformation: BigTextStyleInformation(''),
       );
 
@@ -134,8 +136,8 @@ class NotificationService {
         enableVibration: true,
         enableLights: true,
         color: Color(0xFF0EA5E9),
-        icon: '@mipmap/ic_launcher',
-        largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+        icon: _androidNotificationIcon,
+        largeIcon: DrawableResourceAndroidBitmap(_androidNotificationIcon),
         styleInformation: BigTextStyleInformation(''),
       );
 
@@ -186,8 +188,8 @@ class NotificationService {
         enableVibration: true,
         enableLights: true,
         color: Color(0xFFEF4444),
-        icon: '@mipmap/ic_launcher',
-        largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+        icon: _androidNotificationIcon,
+        largeIcon: DrawableResourceAndroidBitmap(_androidNotificationIcon),
         styleInformation: BigTextStyleInformation(''),
       );
 
@@ -215,6 +217,113 @@ class NotificationService {
       _log('✅ تم إرسال إشعار الخطأ');
     } catch (e) {
       _log('❌ خطأ في إرسال إشعار الخطأ: $e');
+    }
+  }
+
+  /// إرسال إشعار محلي لرسائل الدردشة أثناء فتح التطبيق
+  Future<void> showChatMessageNotification({
+    required String title,
+    required String message,
+  }) async {
+    if (kIsWeb) return;
+    try {
+      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+        'chat_channel',
+        'إشعارات الدردشة',
+        channelDescription: 'إشعارات الرسائل الجديدة داخل النظام',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        enableVibration: true,
+        enableLights: true,
+        color: Color(0xFF4F46E5),
+        icon: _androidNotificationIcon,
+        largeIcon: DrawableResourceAndroidBitmap(_androidNotificationIcon),
+      );
+
+      const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+          DarwinNotificationDetails(
+        presentAlert: true,
+        presentBadge: true,
+        presentSound: true,
+        sound: 'default',
+      );
+
+      const NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: iOSPlatformChannelSpecifics,
+      );
+
+      await _notifications.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title,
+        message,
+        platformChannelSpecifics,
+        payload: 'chat_message',
+      );
+    } catch (e) {
+      _log('❌ خطأ في إرسال إشعار الدردشة: $e');
+    }
+  }
+
+  /// إرسال إشعار دائم لحالة الووكي-توكي
+  Future<void> showWalkiePersistentNotification({
+    required String title,
+    required String message,
+  }) async {
+    if (kIsWeb) return;
+    try {
+      const AndroidNotificationDetails androidPlatformChannelSpecifics =
+          AndroidNotificationDetails(
+        'walkie_persistent_channel',
+        'إشعارات الووكي-توكي',
+        channelDescription: 'إشعار دائم يوضح أن جلسة الووكي-توكي ما زالت متصلة',
+        importance: Importance.low,
+        priority: Priority.low,
+        showWhen: false,
+        enableVibration: false,
+        playSound: false,
+        silent: true,
+        ongoing: true,
+        autoCancel: false,
+        onlyAlertOnce: true,
+        category: AndroidNotificationCategory.service,
+        visibility: NotificationVisibility.public,
+        icon: _androidNotificationIcon,
+        largeIcon: DrawableResourceAndroidBitmap(_androidNotificationIcon),
+      );
+
+      const DarwinNotificationDetails iOSPlatformChannelSpecifics =
+          DarwinNotificationDetails(
+        presentAlert: false,
+        presentBadge: false,
+        presentSound: false,
+      );
+
+      const NotificationDetails platformChannelSpecifics = NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+        iOS: iOSPlatformChannelSpecifics,
+      );
+
+      await _notifications.show(
+        walkieNotificationId,
+        title,
+        message,
+        platformChannelSpecifics,
+        payload: 'walkie_persistent',
+      );
+    } catch (e) {
+      _log('❌ خطأ في إرسال إشعار الووكي-توكي الدائم: $e');
+    }
+  }
+
+  Future<void> cancelWalkiePersistentNotification() async {
+    if (kIsWeb) return;
+    try {
+      await _notifications.cancel(walkieNotificationId);
+    } catch (e) {
+      _log('❌ خطأ في إلغاء إشعار الووكي-توكي الدائم: $e');
     }
   }
 

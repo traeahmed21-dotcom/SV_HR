@@ -16,11 +16,23 @@ import 'task_group_details_screen.dart';
 class TaskCreatorScreen extends StatefulWidget {
   final int clientId;
   final int creatorEmployeeId;
+  final String? templateTitle;
+  final String? templateDescription;
+  final DateTime? templateDueDateTime;
+  final bool? templateAutoApprove;
+  final List<int>? templateEmployeeIds;
+  final bool templateLockText;
 
   const TaskCreatorScreen({
     super.key,
     required this.clientId,
     required this.creatorEmployeeId,
+    this.templateTitle,
+    this.templateDescription,
+    this.templateDueDateTime,
+    this.templateAutoApprove,
+    this.templateEmployeeIds,
+    this.templateLockText = true,
   });
 
   @override
@@ -47,6 +59,10 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
   final _descriptionController = TextEditingController();
   DateTime _dueDateTime = DateTime.now().add(const Duration(hours: 2));
   bool _autoApprove = true;
+
+  final _createSectionKey = GlobalKey();
+  bool _templateActive = false;
+  List<int> _templateEmployeeIds = const [];
 
   String _tasksFilter = 'All';
   List<TaskGroupSummary> _allCreatedTaskGroups = const [];
@@ -146,6 +162,7 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
   @override
   void initState() {
     super.initState();
+    _applyTemplateFromWidget();
     _loadAll();
   }
 
@@ -154,6 +171,50 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
     _titleController.dispose();
     _descriptionController.dispose();
     super.dispose();
+  }
+
+  void _applyTemplateFromWidget() {
+    final title = (widget.templateTitle ?? '').trim();
+    if (title.isEmpty) return;
+    _templateActive = true;
+    _templateEmployeeIds = (widget.templateEmployeeIds ?? const []).where((e) => e > 0).toList();
+    _titleController.text = title;
+    _descriptionController.text = (widget.templateDescription ?? '').trim();
+    _dueDateTime = widget.templateDueDateTime ?? _dueDateTime;
+    _autoApprove = widget.templateAutoApprove ?? _autoApprove;
+    _attachments = const [];
+  }
+
+  DateTime? _parseServerDateTime(String? value) {
+    final s = (value ?? '').trim();
+    if (s.isEmpty) return null;
+    final normalized = s.contains('T') ? s : s.replaceFirst(' ', 'T');
+    final withSeconds = normalized.length == 16 ? '$normalized:00' : normalized;
+    return DateTime.tryParse(withSeconds);
+  }
+
+  Future<void> _scrollToCreateSection() async {
+    final ctx = _createSectionKey.currentContext;
+    if (ctx == null) return;
+    await Scrollable.ensureVisible(
+      ctx,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
+      alignment: 0.05,
+    );
+  }
+
+  void _clearTemplate() {
+    setState(() {
+      _templateActive = false;
+      _templateEmployeeIds = const [];
+      _titleController.clear();
+      _descriptionController.clear();
+      _selectedEmployeeIds = <int>{};
+      _attachments = const [];
+      _dueDateTime = DateTime.now().add(const Duration(hours: 2));
+      _autoApprove = true;
+    });
   }
 
   Future<void> _loadAll() async {
@@ -194,9 +255,18 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
           _selectedEmployeeIds =
               _selectedEmployeeIds.intersection(employees.map((e) => e.employeeId).toSet());
         }
+        if (_templateActive && _templateEmployeeIds.isNotEmpty) {
+          _selectedEmployeeIds =
+              _templateEmployeeIds.toSet().intersection(employees.map((e) => e.employeeId).toSet());
+        }
       });
 
       await _loadCreatedTasks();
+      if (_templateActive) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) _scrollToCreateSection();
+        });
+      }
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
@@ -481,6 +551,8 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
           await _uploadAttachmentsForTasks(createdIds);
         }
         setState(() {
+          _templateActive = false;
+          _templateEmployeeIds = const [];
           _titleController.clear();
           _descriptionController.clear();
           _selectedEmployeeIds = <int>{};
@@ -490,6 +562,58 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
         });
         await _loadCreatedTasks();
       }
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
+  }
+
+  Future<void> _duplicateTaskGroup(int taskGroupId) async {
+    final lang = Provider.of<LanguageService>(context, listen: false).currentLocale.languageCode;
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+    try {
+      final resp = await ApiService.getCreatorTaskGroupDetails(
+        widget.clientId,
+        creatorEmployeeId: widget.creatorEmployeeId,
+        taskGroupId: taskGroupId,
+      );
+      final ok = resp['Success'] == true;
+      final msg = resp['Message']?.toString();
+      final data = resp['Data'];
+      final parsed = (ok && data is Map<String, dynamic>) ? TaskGroupDetails.fromJson(data) : null;
+
+      if (!mounted) return;
+      if (parsed == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text((msg ?? '').trim().isEmpty ? 'تعذر نسخ المهمة' : msg!.trim())),
+        );
+        return;
+      }
+
+      final employeeIds = parsed.assignments
+          .map((a) => a.assignedEmployeeId)
+          .whereType<int>()
+          .where((id) => id > 0)
+          .toSet()
+          .toList()
+        ..sort();
+
+      setState(() {
+        _templateActive = true;
+        _templateEmployeeIds = employeeIds;
+        _titleController.text = parsed.title.trim();
+        _descriptionController.text = (parsed.description ?? '').trim();
+        _dueDateTime = _parseServerDateTime(parsed.dueDateTime) ?? _dueDateTime;
+        _autoApprove = !parsed.requiresApproval;
+        _attachments = const [];
+        _selectedEmployeeIds =
+            employeeIds.toSet().intersection(_managedEmployees.map((e) => e.employeeId).toSet());
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(Translations.getText('task_creator_template_ready', lang))),
+      );
+      await _scrollToCreateSection();
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -767,6 +891,7 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
                       },
                     ),
                     Container(
+                      key: _createSectionKey,
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
                         color: scheme.surface,
@@ -789,6 +914,34 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
                                   fontWeight: FontWeight.w800,
                                 ),
                           ),
+                          if (_templateActive) ...[
+                            const SizedBox(height: 10),
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: scheme.primary.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(14),
+                                border: Border.all(color: scheme.primary.withValues(alpha: 0.18)),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.copy_rounded, color: scheme.primary),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      Translations.getText('task_creator_template_banner', lang),
+                                      style: Theme.of(context).textTheme.bodyMedium,
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: _isSubmitting ? null : _clearTemplate,
+                                    child: Text(Translations.getText('task_creator_template_clear', lang)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                           const SizedBox(height: 12),
                           OutlinedButton.icon(
                             onPressed: _managedEmployees.isEmpty ? null : _selectEmployees,
@@ -800,9 +953,13 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
                           const SizedBox(height: 12),
                           TextField(
                             controller: _titleController,
+                            readOnly: _templateActive && widget.templateLockText,
                             decoration: InputDecoration(
                               labelText: Translations.getText('task_creator_task_title', lang),
                               border: const OutlineInputBorder(),
+                              suffixIcon: _templateActive && widget.templateLockText
+                                  ? const Icon(Icons.lock_outline_rounded)
+                                  : null,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -810,9 +967,13 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
                             controller: _descriptionController,
                             minLines: 2,
                             maxLines: 4,
+                            readOnly: _templateActive && widget.templateLockText,
                             decoration: InputDecoration(
                               labelText: Translations.getText('task_creator_task_description', lang),
                               border: const OutlineInputBorder(),
+                              suffixIcon: _templateActive && widget.templateLockText
+                                  ? const Icon(Icons.lock_outline_rounded)
+                                  : null,
                             ),
                           ),
                           const SizedBox(height: 12),
@@ -1060,6 +1221,12 @@ class _TaskCreatorScreenState extends State<TaskCreatorScreen> {
                                                   color: statusColor,
                                                 ),
                                           ),
+                                        ),
+                                        const SizedBox(width: 8),
+                                        IconButton(
+                                          onPressed: _isSubmitting ? null : () => _duplicateTaskGroup(g.taskGroupId),
+                                          icon: const Icon(Icons.copy_rounded),
+                                          tooltip: Translations.getText('task_creator_duplicate', lang),
                                         ),
                                       ],
                                     ),

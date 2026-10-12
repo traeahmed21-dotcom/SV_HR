@@ -790,11 +790,14 @@ class _AttendanceScreenState extends State<AttendanceScreen>
           return;
         }
 
+        final rawAttendanceMethod = faceStatus['AttendanceMethod'];
+        final hasAttendanceMethod = rawAttendanceMethod != null;
         final attendanceMethod =
-            int.tryParse(faceStatus['AttendanceMethod']?.toString() ?? '0') ?? 0;
+            int.tryParse(rawAttendanceMethod?.toString() ?? '0') ?? 0;
         final isFaceRequired = faceStatus['IsFaceRequired'] == true;
-        requestUsesFace =
-            isFaceRequired || attendanceMethod == 1 || attendanceMethod == 2;
+        requestUsesFace = hasAttendanceMethod
+            ? attendanceMethod == 1 || attendanceMethod == 2
+            : isFaceRequired;
       }
 
       if (requestUsesFace && faceStatus.isEmpty) {
@@ -806,6 +809,8 @@ class _AttendanceScreenState extends State<AttendanceScreen>
           widget.clientId,
           widget.employeeNumber,
         );
+            final fetchedRawAttendanceMethod = faceStatus['AttendanceMethod'];
+            final fetchedHasAttendanceMethod = fetchedRawAttendanceMethod != null;
         // #region debug-point D:face-status
         unawaited(_reportDebugEvent(
           'D',
@@ -814,6 +819,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
           data: {
             'success': faceStatus['Success'],
             'attendanceMethod': faceStatus['AttendanceMethod'],
+                'hasAttendanceMethod': fetchedHasAttendanceMethod,
             'isFaceRequired': faceStatus['IsFaceRequired'],
             'hasFaceTemplate': faceStatus['HasFaceTemplate'],
             'hasFaceImage': faceStatus['HasFaceImage'],

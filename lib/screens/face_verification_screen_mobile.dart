@@ -187,12 +187,12 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen>
         .languageCode;
     _statusMessage = Translations.getText('face_point_to_camera', lang);
     _instructionMessage = lang == 'ar'
-        ? 'سيطلب منك النظام تحدياً حياً عشوائياً قصيراً مثل الرمش أو تحريك الرأس. هذا لمنع الاحتيال بالصورة أو الفيديو.'
-        : 'The system will ask for a short random live challenge such as a blink or head turn to block photo and replay attacks.';
+        ? 'سيطلب منك النظام تحدياً حياً قصيراً: ارمش مرة واحدة. هذا لمنع الاحتيال بالصورة أو الفيديو.'
+        : 'The system will ask for a short live challenge: blink once. This blocks photo and replay attacks.';
     _challengeMessage = lang == 'ar'
         ? 'جاري فحص التموضع وحيوية الوجه...'
         : 'Analyzing face position and passive liveness...';
-    _livenessService.initialize();
+    _livenessService.initialize(requiredChallenges: 1);
     _setupLivenessListeners();
     _initializeCamera();
     // ⚡ إصلاح 2: بدء مؤقت التقاط الاستباقي لصور JPG

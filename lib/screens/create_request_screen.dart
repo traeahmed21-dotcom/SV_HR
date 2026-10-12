@@ -487,11 +487,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         builder: (context, child) {
           return Theme(
             data: Theme.of(context).copyWith(
-              colorScheme: const ColorScheme.light(
-                primary: Color(0xFF0EA5E9),
-                onPrimary: Colors.white,
-                onSurface: Colors.black,
-              ),
+              colorScheme: Theme.of(context).colorScheme,
             ),
             child: child!,
           );
@@ -540,11 +536,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         builder: (context, child) {
           return Theme(
             data: Theme.of(context).copyWith(
-              colorScheme: const ColorScheme.light(
-                primary: Color(0xFF0EA5E9),
-                onPrimary: Colors.white,
-                onSurface: Colors.black,
-              ),
+              colorScheme: Theme.of(context).colorScheme,
             ),
             child: child!,
           );
@@ -584,11 +576,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         builder: (context, child) {
           return Theme(
             data: Theme.of(context).copyWith(
-              colorScheme: const ColorScheme.light(
-                primary: Color(0xFF0EA5E9),
-                onPrimary: Colors.white,
-                onSurface: Colors.black,
-              ),
+              colorScheme: Theme.of(context).colorScheme,
             ),
             child: child!,
           );
@@ -614,11 +602,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
         builder: (context, child) {
           return Theme(
             data: Theme.of(context).copyWith(
-              colorScheme: const ColorScheme.light(
-                primary: Color(0xFF0EA5E9),
-                onPrimary: Colors.white,
-                onSurface: Colors.black,
-              ),
+              colorScheme: Theme.of(context).colorScheme,
             ),
             child: child!,
           );
@@ -1443,22 +1427,21 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   Widget build(BuildContext context) {
     final languageService = Provider.of<LanguageService>(context);
     final lang = languageService.currentLocale.languageCode;
+    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       appBar: AppBar(
         title: Text(Translations.getText('create_request', lang)),
-        backgroundColor: const Color(0xFF0EA5E9),
-        foregroundColor: Colors.white,
         actions: [
           if (_isLoading)
-            const Padding(
-              padding: EdgeInsets.all(16.0),
+            Padding(
+              padding: const EdgeInsets.all(16.0),
               child: SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  color: scheme.onPrimary,
                 ),
               ),
             ),
@@ -1539,7 +1522,10 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.person, color: Color(0xFF0EA5E9)),
+                Icon(
+                  Icons.person,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   Translations.getText('employee_info', lang),
@@ -1613,7 +1599,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           Icon(
             icon,
             size: 16,
-            color: const Color(0xFF0EA5E9),
+            color: Theme.of(context).colorScheme.primary,
           ),
           const SizedBox(width: 8),
           Expanded(
@@ -1655,7 +1641,10 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.category, color: Color(0xFF0EA5E9)),
+                Icon(
+                  Icons.category,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   Translations.getText('request_type', lang),
@@ -1734,7 +1723,10 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.route, color: Color(0xFF0EA5E9)),
+                Icon(
+                  Icons.route,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   Translations.getText('request_workflow', lang),
@@ -1750,9 +1742,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
             const SizedBox(height: 8),
             Text(
               Translations.getText('workflow_steps_label', lang),
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF0EA5E9),
+                color: Theme.of(context).colorScheme.primary,
               ),
             ),
             const SizedBox(height: 8),
@@ -1760,7 +1752,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                   margin: const EdgeInsets.only(bottom: 8),
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: Theme.of(context).colorScheme.surface,
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(color: const Color(0xFFE5E7EB)),
                   ),
@@ -1772,8 +1764,8 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
                           Container(
                             width: 24,
                             height: 24,
-                            decoration: const BoxDecoration(
-                              color: Color(0xFF0EA5E9),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary,
                               shape: BoxShape.circle,
                             ),
                             child: Center(
@@ -2618,31 +2610,6 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            // تنبيه الحد الشهري
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFFF3CD),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: const Color(0xFFFFD54F)),
-              ),
-              child: Row(
-                children: [
-                  const Icon(Icons.info_outline, color: Color(0xFFF57F17), size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      Translations.getText('punch_limit_warning', lang),
-                      style: const TextStyle(
-                        fontSize: 13,
-                        color: Color(0xFFF57F17),
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
             const SizedBox(height: 16),
             // تاريخ البصمة
             InkWell(
@@ -2889,6 +2856,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
   }
 
   Widget _buildActionButtons(String lang) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       children: [
         Row(
@@ -2897,21 +2865,18 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
               child: ElevatedButton(
                 onPressed: _isLoading ? null : _submitRequest,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0EA5E9),
-                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
                 ),
                 child: _isLoading
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor:
-                              AlwaysStoppedAnimation<Color>(Colors.white),
+                          color: scheme.onPrimary,
                         ),
                       )
                     : Text(

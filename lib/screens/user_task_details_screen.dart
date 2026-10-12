@@ -96,7 +96,33 @@ class _UserTaskDetailsScreenState extends State<UserTaskDetailsScreen> {
       }
 
       await _load();
+      if (!mounted) return;
       Navigator.pop(context, true);
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
+  }
+
+  Future<void> _markInProgress() async {
+    if (_task == null) return;
+    setState(() => _isUpdating = true);
+    try {
+      final response = await ApiService.updateUserTaskStatus(
+        widget.clientId,
+        employeeId: widget.employeeId,
+        taskId: widget.taskId,
+        status: 'InProgress',
+      );
+
+      if (!mounted) return;
+      final ok = response['Success'] == true;
+      if (!ok) {
+        final msg = response['Message']?.toString() ?? 'حدث خطأ';
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
+        return;
+      }
+
+      await _load();
     } finally {
       if (mounted) setState(() => _isUpdating = false);
     }
@@ -183,7 +209,21 @@ class _UserTaskDetailsScreenState extends State<UserTaskDetailsScreen> {
     final semantic = Theme.of(context).extension<AppSemanticColors>()!;
 
     final task = _task;
-    final canMarkDone = task != null && task.status != 'Completed';
+    final bottomAction = task == null
+        ? null
+        : switch (task.status) {
+            'Pending' => (
+                label: Translations.getText('tasks_mark_inprogress', lang),
+                icon: Icons.play_circle_outline_rounded,
+                onPressed: _markInProgress,
+              ),
+            'InProgress' => (
+                label: Translations.getText('tasks_mark_done', lang),
+                icon: Icons.check_circle_outline_rounded,
+                onPressed: _markDone,
+              ),
+            _ => null,
+          };
 
     return Scaffold(
       appBar: AppBar(
@@ -195,21 +235,21 @@ class _UserTaskDetailsScreenState extends State<UserTaskDetailsScreen> {
           ),
         ],
       ),
-      bottomNavigationBar: task == null
+      bottomNavigationBar: bottomAction == null
           ? null
           : SafeArea(
               child: Padding(
                 padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
                 child: FilledButton.icon(
-                  onPressed: (!canMarkDone || _isUpdating) ? null : _markDone,
+                  onPressed: _isUpdating ? null : bottomAction.onPressed,
                   icon: _isUpdating
                       ? const SizedBox(
                           width: 18,
                           height: 18,
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
-                      : const Icon(Icons.check_circle_outline_rounded),
-                  label: Text(Translations.getText('tasks_mark_done', lang)),
+                      : Icon(bottomAction.icon),
+                  label: Text(bottomAction.label),
                   style: FilledButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),

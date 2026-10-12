@@ -2,15 +2,13 @@ import 'package:flutter/material.dart';
 import 'app_semantic_colors.dart';
 
 class AppTheme {
-  static const Color brandPrimary = Color(0xFF0EA5E9);
-  static const Color brandSecondary = Color(0xFF2563EB);
-  static const Color brandTertiary = Color(0xFF8B5CF6);
+  static const Color brandPrimary = Color(0xFF281878);
+  static const Color brandSecondary = Color(0xFF3848E8);
+  static const Color brandTertiary = Color(0xFF28C8A8);
   static const Color brandSuccess = Color(0xFF22C55E);
   static const Color brandWarning = Color(0xFFF59E0B);
   static const Color brandError = Color(0xFFEF4444);
-  // static const Color brandBackground = Color(0xFFF5F7FB);
-  static const Color brandBackground = Color.fromARGB(255, 216, 225, 235);
-  // static const Color brandBackground = Color.fromARGB(255, 144, 195, 243);
+  static const Color brandBackground = Color(0xFFF6F8FE);
 
   static ThemeData light() {
     final scheme = ColorScheme.fromSeed(
@@ -43,6 +41,28 @@ class AppTheme {
         ),
       ],
       scaffoldBackgroundColor: brandBackground,
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: scheme.surface,
+        indicatorColor: scheme.primaryContainer,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontWeight:
+                states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w600,
+            fontSize: 12,
+            color: states.contains(WidgetState.selected)
+                ? scheme.onSurface
+                : scheme.onSurfaceVariant,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            size: 24,
+            color: states.contains(WidgetState.selected)
+                ? scheme.onSurface
+                : scheme.onSurfaceVariant,
+          ),
+        ),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,
@@ -166,6 +186,28 @@ class AppTheme {
         ),
       ],
       scaffoldBackgroundColor: scheme.surfaceContainerLow,
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: scheme.surface,
+        indicatorColor: scheme.primaryContainer,
+        labelTextStyle: WidgetStateProperty.resolveWith(
+          (states) => TextStyle(
+            fontWeight:
+                states.contains(WidgetState.selected) ? FontWeight.w700 : FontWeight.w600,
+            fontSize: 12,
+            color: states.contains(WidgetState.selected)
+                ? scheme.onSurface
+                : scheme.onSurfaceVariant,
+          ),
+        ),
+        iconTheme: WidgetStateProperty.resolveWith(
+          (states) => IconThemeData(
+            size: 24,
+            color: states.contains(WidgetState.selected)
+                ? scheme.onSurface
+                : scheme.onSurfaceVariant,
+          ),
+        ),
+      ),
       appBarTheme: AppBarTheme(
         backgroundColor: scheme.primary,
         foregroundColor: scheme.onPrimary,

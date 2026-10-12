@@ -197,7 +197,6 @@ class LivenessDetectionService {
   static const int _minFramesForAnalysis = 16;
   static const int _maxFramesBuffer = 72;
   static const int _requiredSignals = _totalSignals;
-  static const int _defaultRequiredActiveChallenges = 2;
   static const int _maxMissingFaceFramesForGrace = 4;
   static const double _blinkThresholdLow = 0.33;
   static const double _blinkThresholdHigh = 0.72;
@@ -219,7 +218,6 @@ class LivenessDetectionService {
   final List<String> _completedSignalKeys = [];
   final List<String> _passedChecks = [];
   final List<String> _failedChecks = [];
-  final Random _random = Random();
 
   DateTime? _sessionStart;
   final Duration _maxSessionDuration = const Duration(seconds: 30);
@@ -293,18 +291,12 @@ class LivenessDetectionService {
   }
 
   List<LivenessChallengeType> _buildChallengePlan(int requiredChallenges) {
-    final desired = requiredChallenges > 0
-        ? requiredChallenges.clamp(1, _defaultRequiredActiveChallenges)
-        : _defaultRequiredActiveChallenges;
-    final headTurn = _random.nextBool()
-        ? LivenessChallengeType.headTiltLeft
-        : LivenessChallengeType.headTiltRight;
-    final plan = <LivenessChallengeType>[
+    final desired = requiredChallenges > 0 ? 1 : 1;
+    return List<LivenessChallengeType>.filled(
+      desired,
       LivenessChallengeType.blink,
-      headTurn,
-    ];
-    plan.shuffle(_random);
-    return plan.take(desired).toList(growable: false);
+      growable: false,
+    );
   }
 
   void _emitChallenge(LivenessChallenge challenge) {

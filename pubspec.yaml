@@ -37,6 +37,7 @@ dependencies:
   
   # HTTP requests
   http: ^1.1.0
+  http_parser: ^4.1.0
   
   # Location services
   geolocator: ^10.1.0
@@ -58,15 +59,16 @@ dependencies:
   
   # State management (optional for future improvements)
   provider: ^6.1.1
+  livekit_client: ^2.10.0
   
   # Local storage (optional for future improvements)
   shared_preferences: ^2.2.2
   
   # Network connectivity (optional for future improvements)
-  connectivity_plus: ^5.0.2
+  connectivity_plus: ^7.0.0
   
   # Device information
-  device_info_plus: ^9.1.2
+  device_info_plus: ^12.4.0
 
   # Camera and AI
   camera: ^0.11.0+1

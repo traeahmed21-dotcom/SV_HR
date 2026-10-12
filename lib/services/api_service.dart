@@ -4,21 +4,21 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart' as http_parser;
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../config/api_config.dart';
 import '../models/api_models.dart' as api_models;
 import '../models/shift.dart' as shift_models;
 import '../models/pending_counts.dart';
 import '../models/notification_model.dart';
+import '../models/chat_models.dart';
 import '../models/attendance.dart';
 import '../models/request.dart' as request_models;
 import '../models/employee_full_info.dart';
 import '../models/work_info_models.dart';
 import '../models/location.dart';
-import '../models/salary_details.dart';
 import '../models/mobile_advertisement.dart';
 import '../models/app_notice.dart';
-
+import '../models/app_update_policy.dart';
+import '../models/walkie_talkie_models.dart';
 
 class ApiService {
   static final ApiService _instance = ApiService._internal();
@@ -26,6 +26,37 @@ class ApiService {
   ApiService._internal();
 
   static String? lastEmployeeShiftMessage;
+
+  // #region debug-point shared:chat-image-debug
+  static const String _chatImageDebugUrl = 'http://192.168.1.168:7777/event';
+  static const String _chatImageDebugSessionId = 'chat-image-upload';
+
+  static Future<void> reportChatImageDebug(
+    String hypothesisId,
+    String location,
+    String message, {
+    Map<String, dynamic>? data,
+    String runId = 'pre-fix',
+  }) async {
+    try {
+      await http
+          .post(
+            Uri.parse(_chatImageDebugUrl),
+            headers: {'Content-Type': 'application/json'},
+            body: json.encode({
+              'sessionId': _chatImageDebugSessionId,
+              'runId': runId,
+              'hypothesisId': hypothesisId,
+              'location': location,
+              'msg': '[DEBUG] $message',
+              'data': data ?? <String, dynamic>{},
+              'ts': DateTime.now().millisecondsSinceEpoch,
+            }),
+          )
+          .timeout(const Duration(seconds: 3));
+    } catch (_) {}
+  }
+  // #endregion
 
   // تسجيل الأحداث - في الإنتاج استخدم نظام تسجيل مناسب مثل logger
   static void _log(String message) {
@@ -88,7 +119,8 @@ class ApiService {
         } on http.ClientException catch (e) {
           if (!kIsWeb) rethrow;
           final msg = e.toString();
-          final isCors = msg.contains('Failed to fetch') || msg.contains('TypeError');
+          final isCors =
+              msg.contains('Failed to fetch') || msg.contains('TypeError');
           _log('⚠️ Web POST failed for $uri | $msg (CORS=$isCors)');
           if (!isCors || attempt >= maxAttemptsPerUri) {
             break;
@@ -129,7 +161,8 @@ class ApiService {
           loginUri,
           if (ApiConfig.webProxyPrefix.isEmpty) ...[
             Uri.parse('https://cors.isomorphic-git.org/${ApiConfig.loginUrl}'),
-            Uri.parse('https://thingproxy.freeboard.io/fetch/${ApiConfig.loginUrl}'),
+            Uri.parse(
+                'https://thingproxy.freeboard.io/fetch/${ApiConfig.loginUrl}'),
             Uri.parse('https://cors.bridged.cc/${ApiConfig.loginUrl}'),
           ]
         ];
@@ -248,8 +281,7 @@ class ApiService {
       _log('💥 خطأ شبكة (SocketException): $e');
       return api_models.EmployeeLoginResponse(
         success: false,
-        message:
-            'تعذر الوصول إلى الخادم من الجهاز.\n'
+        message: 'تعذر الوصول إلى الخادم من الجهاز.\n'
             'تأكد من أن الهاتف على نفس الشبكة مع الخادم وأن العنوان صحيح:\n'
             '${ApiConfig.loginUrl}',
         employee: null,
@@ -302,11 +334,13 @@ class ApiService {
   static Future<Map<String, dynamic>> forgotPassword(String email) async {
     try {
       _log('🚀 بدء طلب استعادة كلمة المرور...');
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/api/employee/forgot-password'),
-        headers: ApiConfig.headers,
-        body: json.encode({'Email': email}),
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .post(
+            Uri.parse('${ApiConfig.baseUrl}/api/employee/forgot-password'),
+            headers: ApiConfig.headers,
+            body: json.encode({'Email': email}),
+          )
+          .timeout(const Duration(seconds: 30));
 
       _log('📡 Response Status Code: ${response.statusCode}');
       return json.decode(response.body);
@@ -317,14 +351,17 @@ class ApiService {
   }
 
   // التحقق من رمز OTP
-  static Future<Map<String, dynamic>> verifyOTP(String email, String otp) async {
+  static Future<Map<String, dynamic>> verifyOTP(
+      String email, String otp) async {
     try {
       _log('🚀 بدء التحقق من رمز OTP...');
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/api/employee/verify-otp'),
-        headers: ApiConfig.headers,
-        body: json.encode({'Email': email, 'OTP': otp}),
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .post(
+            Uri.parse('${ApiConfig.baseUrl}/api/employee/verify-otp'),
+            headers: ApiConfig.headers,
+            body: json.encode({'Email': email, 'OTP': otp}),
+          )
+          .timeout(const Duration(seconds: 30));
 
       _log('📡 Response Status Code: ${response.statusCode}');
       return json.decode(response.body);
@@ -343,16 +380,18 @@ class ApiService {
   }) async {
     try {
       _log('🚀 بدء إعادة تعيين كلمة المرور...');
-      final response = await http.post(
-        Uri.parse('${ApiConfig.baseUrl}/api/employee/reset-password'),
-        headers: ApiConfig.headers,
-        body: json.encode({
-          'Email': email,
-          'OTP': otp,
-          'NewPassword': newPassword,
-          'ConfirmPassword': confirmPassword,
-        }),
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .post(
+            Uri.parse('${ApiConfig.baseUrl}/api/employee/reset-password'),
+            headers: ApiConfig.headers,
+            body: json.encode({
+              'Email': email,
+              'OTP': otp,
+              'NewPassword': newPassword,
+              'ConfirmPassword': confirmPassword,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
 
       _log('📡 Response Status Code: ${response.statusCode}');
       return json.decode(response.body);
@@ -1050,7 +1089,8 @@ class ApiService {
 
       final response = await http
           .post(
-            Uri.parse('${ApiConfig.baseUrl}/api/$clientId/requests/manual-punch'),
+            Uri.parse(
+                '${ApiConfig.baseUrl}/api/$clientId/requests/manual-punch'),
             headers: {
               'Content-Type': 'application/json',
               'Accept': 'application/json',
@@ -1664,12 +1704,14 @@ class ApiService {
     }
   }
 
-  Future<EmployeeInfo?> getEmployeeBasicInfo(int clientId, String employeeKey) async {
+  Future<EmployeeInfo?> getEmployeeBasicInfo(
+      int clientId, String employeeKey) async {
     try {
       final key = employeeKey.trim();
       if (key.isEmpty) return null;
 
-      final url = Uri.parse('${ApiConfig.baseUrl}/api/$clientId/employee/basic/$key');
+      final url =
+          Uri.parse('${ApiConfig.baseUrl}/api/$clientId/employee/basic/$key');
       _log('🚀 جلب معلومات الموظف الأساسية...');
       _log('🔗 URL: $url');
 
@@ -1737,26 +1779,28 @@ class ApiService {
           lastEmployeeShiftMessage =
               (jsonData['Message'] ?? jsonData['message'])?.toString();
         }
-        
+
         if (jsonData is Map<String, dynamic> && jsonData.containsKey('Data')) {
-             final data = jsonData['Data'];
-             if (data == null) {
-                _log('⚠️ Data is null in response');
-                lastEmployeeShiftMessage ??= 'لا توجد ورديات مسندة حالياً';
-                return [];
-             }
-             
-             if (data is List) {
-                return data.map((e) => shift_models.ShiftData.fromJson(e)).toList();
-             } else {
-                return [shift_models.ShiftData.fromJson(data)];
-             }
+          final data = jsonData['Data'];
+          if (data == null) {
+            _log('⚠️ Data is null in response');
+            lastEmployeeShiftMessage ??= 'لا توجد ورديات مسندة حالياً';
+            return [];
+          }
+
+          if (data is List) {
+            return data.map((e) => shift_models.ShiftData.fromJson(e)).toList();
+          } else {
+            return [shift_models.ShiftData.fromJson(data)];
+          }
         }
-        
+
         if (jsonData is List) {
-           return jsonData.map((e) => shift_models.ShiftData.fromJson(e)).toList();
+          return jsonData
+              .map((e) => shift_models.ShiftData.fromJson(e))
+              .toList();
         }
-        
+
         return [shift_models.ShiftData.fromJson(jsonData)];
       } else if (response.statusCode == 404) {
         _log('⚠️ API returned 404: Not Found');
@@ -1788,7 +1832,8 @@ class ApiService {
       final key = employeeNumber.trim();
       if (key.isEmpty) return [];
 
-      final url = Uri.parse('${ApiConfig.baseUrl}/api/$clientId/employee/locations/$key');
+      final url = Uri.parse(
+          '${ApiConfig.baseUrl}/api/$clientId/employee/locations/$key');
       _log('🚀 جلب مواقع عمل الموظف...');
       _log('🔗 URL: $url');
 
@@ -1832,8 +1877,8 @@ class ApiService {
         return [];
       }
 
-      final url =
-          Uri.parse('${ApiConfig.baseUrl}/api/$clientId/attendance/shifts/$employeeNumber');
+      final url = Uri.parse(
+          '${ApiConfig.baseUrl}/api/$clientId/attendance/shifts/$employeeNumber');
       _log('🚀 جلب جميع ورديات الموظف...');
       _log('🔗 URL: $url');
 
@@ -1928,7 +1973,8 @@ class ApiService {
       if (decoded is List) {
         return decoded
             .whereType<Map>()
-            .map((e) => MobileAdvertisement.fromJson(Map<String, dynamic>.from(e)))
+            .map((e) =>
+                MobileAdvertisement.fromJson(Map<String, dynamic>.from(e)))
             .toList();
       }
 
@@ -1989,6 +2035,47 @@ class ApiService {
     }
   }
 
+  static Future<AppUpdatePolicy?> getAppUpdatePolicy({
+    required String currentVersion,
+    required String platform,
+  }) async {
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/app-update/policy')
+          .replace(queryParameters: {
+        'currentVersion': currentVersion.trim(),
+        'platform': platform.trim(),
+      });
+      _log('🚀 جلب سياسة تحديث التطبيق...');
+      _log('🔗 URL: $uri');
+
+      final response = await http
+          .get(
+            uri,
+            headers: ApiConfig.headers,
+          )
+          .timeout(const Duration(seconds: 20));
+
+      _log('📡 Response Status Code: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        return null;
+      }
+
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        final data = decoded['Data'];
+        if (data is Map<String, dynamic>) {
+          return AppUpdatePolicy.fromJson(data);
+        }
+        return AppUpdatePolicy.fromJson(decoded);
+      }
+
+      return null;
+    } catch (e) {
+      _log('💥 خطأ في getAppUpdatePolicy: $e');
+      return null;
+    }
+  }
+
   static Future<List<api_models.CompanyHoliday>> getCompanyHolidaysInRange(
     int clientId, {
     required int employeeId,
@@ -2003,8 +2090,9 @@ class ApiService {
     }
 
     try {
-      final uri = Uri.parse('${ApiConfig.baseUrl}/api/$clientId/company-holidays')
-          .replace(queryParameters: {
+      final uri =
+          Uri.parse('${ApiConfig.baseUrl}/api/$clientId/company-holidays')
+              .replace(queryParameters: {
         'from': fmt(fromDate),
         'to': fmt(toDate),
         'employeeId': employeeId.toString(),
@@ -2724,7 +2812,9 @@ class ApiService {
             try {
               final parsed = json.decode(data);
               if (parsed is List) {
-                return parsed.map((e) => NotificationModel.fromJson(e)).toList();
+                return parsed
+                    .map((e) => NotificationModel.fromJson(e))
+                    .toList();
               }
             } catch (_) {}
           }
@@ -2760,14 +2850,14 @@ class ApiService {
     }
   }
 
-  static Future<bool> markAllNotificationsRead(int clientId, int employeeId) async {
+  static Future<bool> markAllNotificationsRead(
+      int clientId, int employeeId) async {
     try {
-      final response = await http
-          .put(
-            Uri.parse('${ApiConfig.baseUrl}/api/$clientId/notifications/mark-all-read/$employeeId'),
-            headers: {'Accept': 'application/json'},
-          )
-          .timeout(const Duration(seconds: 30));
+      final response = await http.put(
+        Uri.parse(
+            '${ApiConfig.baseUrl}/api/$clientId/notifications/mark-all-read/$employeeId'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
       return response.statusCode == 200;
     } catch (e) {
       return false;
@@ -2783,8 +2873,12 @@ class ApiService {
       if (notificationIds.isEmpty) return true;
       final response = await http
           .put(
-            Uri.parse('${ApiConfig.baseUrl}/api/$clientId/notifications/read-bulk'),
-            headers: {'Accept': 'application/json', 'Content-Type': 'application/json'},
+            Uri.parse(
+                '${ApiConfig.baseUrl}/api/$clientId/notifications/read-bulk'),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
             body: json.encode({
               'EmployeeID': employeeId,
               'NotificationIDs': notificationIds,
@@ -2814,6 +2908,362 @@ class ApiService {
       return 0;
     } catch (e) {
       return 0;
+    }
+  }
+
+  static Future<List<ChatConversationSummary>> getChatConversations(
+    int clientId,
+    int employeeId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${ApiConfig.baseUrl}/api/$clientId/chat/conversations/$employeeId'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        throw Exception(
+            'Chat conversations API failed: ${response.statusCode}');
+      }
+
+      final decoded = json.decode(response.body);
+      final data = decoded is Map<String, dynamic>
+          ? (decoded['Data'] ?? decoded['data'] ?? [])
+          : [];
+      if (data is List) {
+        return data
+            .map((item) =>
+                ChatConversationSummary.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      _log('💥 خطأ في جلب محادثات الدردشة: $e');
+      return [];
+    }
+  }
+
+  static Future<
+      ({
+        ChatConversationInfo? conversation,
+        List<ChatMessageModel> messages
+      })> getChatMessages(
+    int clientId,
+    int employeeId,
+    int conversationId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${ApiConfig.baseUrl}/api/$clientId/chat/conversations/$conversationId/messages/$employeeId'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        throw Exception('Chat messages API failed: ${response.statusCode}');
+      }
+
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        final conversationData =
+            decoded['Conversation'] ?? decoded['conversation'];
+        final messagesData = decoded['Data'] ?? decoded['data'] ?? [];
+        final conversation = conversationData is Map<String, dynamic>
+            ? ChatConversationInfo.fromJson(conversationData)
+            : null;
+        final messages = messagesData is List
+            ? messagesData
+                .map((item) =>
+                    ChatMessageModel.fromJson(item as Map<String, dynamic>))
+                .toList()
+            : <ChatMessageModel>[];
+        return (conversation: conversation, messages: messages);
+      }
+
+      return (conversation: null, messages: <ChatMessageModel>[]);
+    } catch (e) {
+      _log('💥 خطأ في جلب رسائل الدردشة: $e');
+      return (conversation: null, messages: <ChatMessageModel>[]);
+    }
+  }
+
+  static Future<bool> sendChatMessage(
+    int clientId,
+    int employeeId,
+    int conversationId,
+    String message,
+  ) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse(
+                '${ApiConfig.baseUrl}/api/$clientId/chat/conversations/$conversationId/messages'),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({
+              'EmployeeID': employeeId,
+              'Message': message,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+      return response.statusCode == 200;
+    } catch (e) {
+      _log('💥 خطأ في إرسال رسالة الدردشة: $e');
+      return false;
+    }
+  }
+
+  static Future<({bool success, String? message})> sendChatAttachments(
+    int clientId,
+    int employeeId,
+    int conversationId, {
+    String message = '',
+    required List<({String fileName, List<int> bytes, String? contentType})>
+        attachments,
+  }) async {
+    try {
+      // #region debug-point B:send-chat-attachments-request
+      unawaited(reportChatImageDebug(
+        'B',
+        'api_service.dart:sendChatAttachments:request',
+        'Preparing chat attachment request',
+        data: {
+          'clientId': clientId,
+          'employeeId': employeeId,
+          'conversationId': conversationId,
+          'messageLength': message.length,
+          'attachmentCount': attachments.length,
+          'totalBytes': attachments.fold<int>(
+            0,
+            (sum, item) => sum + item.bytes.length,
+          ),
+          'attachments': attachments
+              .map((attachment) => {
+                    'fileName': attachment.fileName,
+                    'contentType': attachment.contentType,
+                    'size': attachment.bytes.length,
+                  })
+              .toList(),
+        },
+      ));
+      // #endregion
+      if (attachments.isEmpty) {
+        return (success: false, message: 'لا توجد مرفقات للإرسال');
+      }
+
+      final response = await http
+          .post(
+            Uri.parse(
+                '${ApiConfig.baseUrl}/api/$clientId/chat/conversations/$conversationId/messages'),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({
+              'EmployeeID': employeeId,
+              'Message': message,
+              'Attachments': attachments
+                  .map((attachment) => {
+                        'FileName': attachment.fileName,
+                        'ContentType': attachment.contentType,
+                        'Base64Content': base64Encode(attachment.bytes),
+                      })
+                  .toList(),
+            }),
+          )
+          .timeout(const Duration(seconds: 120));
+
+      final decoded = _tryDecodeJson(response.body);
+      final responseMessage = _extractApiMessage(decoded);
+      // #region debug-point B:send-chat-attachments-response
+      unawaited(reportChatImageDebug(
+        'B',
+        'api_service.dart:sendChatAttachments:response',
+        'Received chat attachment response',
+        data: {
+          'statusCode': response.statusCode,
+          'responseMessage': responseMessage,
+          'bodySnippet': response.body.length > 500
+              ? response.body.substring(0, 500)
+              : response.body,
+        },
+      ));
+      // #endregion
+      if (response.statusCode == 200) {
+        return (success: true, message: responseMessage);
+      }
+
+      return (
+        success: false,
+        message:
+            responseMessage ?? 'تعذر إرسال المرفقات (${response.statusCode})',
+      );
+    } catch (e) {
+      _log('💥 خطأ في إرسال مرفقات الدردشة: $e');
+      // #region debug-point B:send-chat-attachments-exception
+      unawaited(reportChatImageDebug(
+        'B',
+        'api_service.dart:sendChatAttachments:exception',
+        'Exception while sending chat attachments',
+        data: {'error': e.toString()},
+      ));
+      // #endregion
+      return (
+        success: false,
+        message: 'تعذر الاتصال بالخادم أثناء إرسال المرفقات'
+      );
+    }
+  }
+
+  static String getChatAttachmentUrl(
+    int clientId,
+    int employeeId,
+    int attachmentId,
+  ) {
+    return '${ApiConfig.baseUrl}/api/$clientId/chat/attachments/$attachmentId?employeeId=$employeeId';
+  }
+
+  static dynamic _tryDecodeJson(String body) {
+    try {
+      return json.decode(body);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static String? _extractApiMessage(dynamic decoded) {
+    if (decoded is Map<String, dynamic>) {
+      final value = decoded['Message'] ?? decoded['message'];
+      if (value != null && '$value'.trim().isNotEmpty) {
+        return '$value'.trim();
+      }
+    }
+    return null;
+  }
+
+  static Future<bool> markChatConversationRead(
+    int clientId,
+    int employeeId,
+    int conversationId,
+  ) async {
+    try {
+      final response = await http
+          .put(
+            Uri.parse(
+                '${ApiConfig.baseUrl}/api/$clientId/chat/conversations/$conversationId/read'),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({
+              'EmployeeID': employeeId,
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+      return response.statusCode == 200;
+    } catch (e) {
+      _log('💥 خطأ في تحديث قراءة محادثة الدردشة: $e');
+      return false;
+    }
+  }
+
+  static Future<int> getChatUnreadCount(
+    int clientId,
+    int employeeId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${ApiConfig.baseUrl}/api/$clientId/chat/unread-count/$employeeId'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 20));
+
+      if (response.statusCode != 200) return 0;
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded['Count'] ?? decoded['count'] ?? 0;
+      }
+      return 0;
+    } catch (e) {
+      _log('💥 خطأ في جلب عدد رسائل الدردشة غير المقروءة: $e');
+      return 0;
+    }
+  }
+
+  static Future<List<WalkieTalkieGroup>> getWalkieTalkieGroups(
+    int clientId,
+    int employeeId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${ApiConfig.baseUrl}/api/$clientId/walkie/groups/$employeeId'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        throw Exception(
+            'Walkie-talkie groups API failed: ${response.statusCode}');
+      }
+
+      final decoded = json.decode(response.body);
+      final data = decoded is Map<String, dynamic>
+          ? (decoded['Data'] ?? decoded['data'] ?? [])
+          : [];
+      if (data is List) {
+        return data
+            .map((item) =>
+                WalkieTalkieGroup.fromJson(item as Map<String, dynamic>))
+            .toList();
+      }
+      return [];
+    } catch (e) {
+      _log('💥 خطأ في جلب مجموعات الووكي-توكي: $e');
+      return [];
+    }
+  }
+
+  static Future<WalkieTalkieAccessToken?> issueWalkieTalkieToken(
+    int clientId,
+    int employeeId,
+    int groupId, {
+    String? deviceId,
+  }) async {
+    try {
+      final response = await http
+          .post(
+            Uri.parse(
+                '${ApiConfig.baseUrl}/api/$clientId/walkie/groups/$groupId/token'),
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json',
+            },
+            body: json.encode({
+              'EmployeeID': employeeId,
+              'DeviceID': deviceId ?? 'flutter-app',
+            }),
+          )
+          .timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        return null;
+      }
+
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        final data = decoded['Data'] ?? decoded['data'];
+        if (data is Map<String, dynamic>) {
+          return WalkieTalkieAccessToken.fromJson(data);
+        }
+      }
+
+      return null;
+    } catch (e) {
+      _log('💥 خطأ في إصدار توكن الووكي-توكي: $e');
+      return null;
     }
   }
 
@@ -2854,10 +3304,12 @@ class ApiService {
           '${ApiConfig.baseUrl}/api/$clientId/payroll/details/$employeeId?month=$month&year=$year';
       _log('🔗 URL: $url');
 
-      final response = await http.get(
-        Uri.parse(url),
-        headers: ApiConfig.headers,
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .get(
+            Uri.parse(url),
+            headers: ApiConfig.headers,
+          )
+          .timeout(const Duration(seconds: 30));
 
       _log('📡 Response Status Code: ${response.statusCode}');
       _log('📄 Response Body: ${response.body}');
@@ -2877,7 +3329,7 @@ class ApiService {
             'success': false,
             'message': errorData['message'] ?? 'فشل في جلب تفاصيل الراتب',
           };
-        } catch (e) { 
+        } catch (e) {
           return {
             'success': false,
             'message': 'فشل في جلب تفاصيل الراتب: ${response.statusCode}',
@@ -2942,7 +3394,8 @@ class ApiService {
       if (response.statusCode == 404) {
         return {
           'Success': false,
-          'Message': 'الخدمة غير متوفرة على السيرفر (تحتاج تحديث الـ API): /task-groups',
+          'Message':
+              'الخدمة غير متوفرة على السيرفر (تحتاج تحديث الـ API): /task-groups',
           'Data': [],
         };
       }
@@ -2967,8 +3420,9 @@ class ApiService {
     required int taskId,
   }) async {
     try {
-      final uri = Uri.parse('${ApiConfig.baseUrl}/api/$clientId/user-tasks/$taskId')
-          .replace(queryParameters: {'employeeId': employeeId.toString()});
+      final uri =
+          Uri.parse('${ApiConfig.baseUrl}/api/$clientId/user-tasks/$taskId')
+              .replace(queryParameters: {'employeeId': employeeId.toString()});
 
       final response = await http.get(
         uri,
@@ -3009,11 +3463,16 @@ class ApiService {
               '${ApiConfig.baseUrl}/api/$clientId/user-tasks/$taskId/status')
           .replace(queryParameters: {'employeeId': employeeId.toString()});
 
-      final response = await http.put(
-        uri,
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: json.encode({'Status': status}),
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .put(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: json.encode({'Status': status}),
+          )
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
@@ -3055,10 +3514,18 @@ class ApiService {
       ).timeout(const Duration(seconds: 60));
 
       if (response.statusCode == 200) {
-        return {'Success': true, 'Data': response.bodyBytes, 'Message': 'تم التحميل بنجاح'};
+        return {
+          'Success': true,
+          'Data': response.bodyBytes,
+          'Message': 'تم التحميل بنجاح'
+        };
       }
 
-      return {'Success': false, 'Data': null, 'Message': 'فشل في تحميل المرفق: ${response.statusCode}'};
+      return {
+        'Success': false,
+        'Data': null,
+        'Message': 'فشل في تحميل المرفق: ${response.statusCode}'
+      };
     } catch (e) {
       return {'Success': false, 'Data': null, 'Message': 'خطأ في الاتصال: $e'};
     }
@@ -3123,11 +3590,16 @@ class ApiService {
         if (requiresApproval != null) 'RequiresApproval': requiresApproval,
       };
 
-      final response = await http.post(
-        uri,
-        headers: {'Content-Type': 'application/json', 'Accept': 'application/json'},
-        body: json.encode(payload),
-      ).timeout(const Duration(seconds: 30));
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json'
+            },
+            body: json.encode(payload),
+          )
+          .timeout(const Duration(seconds: 30));
 
       if (response.statusCode == 200) {
         final decoded = json.decode(response.body);
@@ -3361,7 +3833,10 @@ class ApiService {
         };
       }
 
-      return {'Success': false, 'Message': 'فشل في اعتماد المهمة: ${response.statusCode}'};
+      return {
+        'Success': false,
+        'Message': 'فشل في اعتماد المهمة: ${response.statusCode}'
+      };
     } catch (e) {
       return {'Success': false, 'Message': 'خطأ في الاتصال: $e'};
     }
@@ -3389,7 +3864,10 @@ class ApiService {
         };
       }
 
-      return {'Success': false, 'Message': 'فشل في إلغاء المهمة: ${response.statusCode}'};
+      return {
+        'Success': false,
+        'Message': 'فشل في إلغاء المهمة: ${response.statusCode}'
+      };
     } catch (e) {
       return {'Success': false, 'Message': 'خطأ في الاتصال: $e'};
     }
@@ -3417,7 +3895,10 @@ class ApiService {
         };
       }
 
-      return {'Success': false, 'Message': 'فشل في اعتماد المهمة: ${response.statusCode}'};
+      return {
+        'Success': false,
+        'Message': 'فشل في اعتماد المهمة: ${response.statusCode}'
+      };
     } catch (e) {
       return {'Success': false, 'Message': 'خطأ في الاتصال: $e'};
     }
@@ -3445,7 +3926,10 @@ class ApiService {
         };
       }
 
-      return {'Success': false, 'Message': 'فشل في إلغاء المهمة: ${response.statusCode}'};
+      return {
+        'Success': false,
+        'Message': 'فشل في إلغاء المهمة: ${response.statusCode}'
+      };
     } catch (e) {
       return {'Success': false, 'Message': 'خطأ في الاتصال: $e'};
     }

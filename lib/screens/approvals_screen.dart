@@ -16,6 +16,8 @@ import 'package:provider/provider.dart';
 import '../services/language_service.dart';
 import '../services/translations.dart';
 import '../utils/file_actions.dart';
+import '../theme/app_semantic_colors.dart';
+import '../widgets/custom_card.dart';
 
 /// شاشة الموافقات - المعتمد نفسه هو من يقوم بالموافقة أو الرفض
 /// يتم تحديد المعتمد في الرابط: /api/{ClientId}/approvals/{requestId}/approve/{approverId}
@@ -40,6 +42,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   bool _hasError = false;
   String _errorMessage = '';
   bool _permissionVerified = false;
+  bool _isRequestDetailsBusy = false;
   final Map<String, _ApprovalGateInfo> _approvalGateInfo = {};
   final Set<String> _approvalGateLoading = {};
   final Set<String> _cancelledRejectedRequestIds = {};
@@ -1042,6 +1045,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   Widget build(BuildContext context) {
     final languageService = Provider.of<LanguageService>(context);
     final lang = languageService.currentLocale.languageCode;
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
       appBar: AppBar(
         title: Column(
@@ -1098,8 +1102,8 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   Widget _buildBody() {
     final languageService = Provider.of<LanguageService>(context);
     final lang = languageService.currentLocale.languageCode;
+    final scheme = Theme.of(context).colorScheme;
     if (_isLoading) {
-      final scheme = Theme.of(context).colorScheme;
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1137,7 +1141,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
               child: Text(
                 _errorMessage,
                 textAlign: TextAlign.center,
-                style: const TextStyle(color: Colors.grey),
+                style: TextStyle(color: scheme.onSurfaceVariant),
               ),
             ),
             const SizedBox(height: 16),
@@ -1145,10 +1149,6 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
               onPressed: _loadPendingRequests,
               icon: const Icon(Icons.refresh),
               label: Text(Translations.getText('retry', lang)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0EA5E9),
-                foregroundColor: Colors.white,
-              ),
             ),
           ],
         ),
@@ -1163,30 +1163,30 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
             Container(
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
-                color: Colors.grey.withOpacity(0.1),
+                color: scheme.surfaceContainerHighest.withValues(alpha: 0.6),
                 shape: BoxShape.circle,
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.approval,
                 size: 80,
-                color: Colors.grey,
+                color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
               ),
             ),
             const SizedBox(height: 16),
             Text(
               Translations.getText('no_pending_requests', lang),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
-                color: Colors.grey,
+                color: scheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               Translations.getText('all_requests_processed', lang),
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 14,
-                color: Colors.grey,
+                color: scheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 24),
@@ -1194,10 +1194,6 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
               onPressed: _loadPendingRequests,
               icon: const Icon(Icons.refresh),
               label: Text(Translations.getText('refresh', lang)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF0EA5E9),
-                foregroundColor: Colors.white,
-              ),
             ),
           ],
         ),
@@ -1210,11 +1206,11 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: scheme.surface,
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 5,
+                color: scheme.shadow.withValues(alpha: 0.06),
+                blurRadius: 10,
                 offset: const Offset(0, 2),
               ),
             ],
@@ -1836,25 +1832,44 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   }
 
   void _showRequestDetails(request_models.EmployeeRequest request) async {
+    if (_isRequestDetailsBusy) return;
+    _isRequestDetailsBusy = true;
+
     final lang = Provider.of<LanguageService>(context, listen: false)
         .currentLocale
         .languageCode;
-    // إظهار loading dialog
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+    bool loadingVisible = false;
+
+    void closeLoadingIfVisible() {
+      if (!mounted) return;
+      if (!loadingVisible) return;
+      if (rootNavigator.canPop()) {
+        rootNavigator.pop();
+      }
+      loadingVisible = false;
+    }
+
     showDialog(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: Row(
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(width: 16),
-              Text(Translations.getText('loading_request_details', lang)),
-            ],
+      builder: (BuildContext dialogContext) {
+        return PopScope(
+          canPop: false,
+          child: AlertDialog(
+            content: Row(
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(width: 16),
+                Text(Translations.getText('loading_request_details', lang)),
+              ],
+            ),
           ),
         );
       },
     );
+    loadingVisible = true;
 
     try {
       // تحويل request.id إلى رقم
@@ -1862,7 +1877,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       try {
         requestId = int.parse(request.id);
       } catch (e) {
-        Navigator.of(context).pop(); // إغلاق loading dialog
+        closeLoadingIfVisible();
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
@@ -1882,7 +1897,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       final requestDetails = await _loadRequestDetails(requestId);
 
       // إغلاق loading dialog
-      Navigator.of(context).pop();
+      closeLoadingIfVisible();
 
       if (requestDetails == null) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -1953,38 +1968,49 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       // عرض تفاصيل الطلب بتحسين التصميم
       showDialog(
         context: context,
+        barrierDismissible: false,
+        useRootNavigator: true,
         builder: (BuildContext context) {
+          final scheme = Theme.of(context).colorScheme;
+          final semantic = Theme.of(context).extension<AppSemanticColors>();
+
           return Dialog(
+            insetPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 24),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
+              borderRadius: BorderRadius.circular(24),
             ),
             child: Container(
-              constraints: const BoxConstraints(maxHeight: 600),
+              constraints: BoxConstraints(
+                maxHeight: min(720.0, MediaQuery.sizeOf(context).height * 0.86),
+                maxWidth: min(560.0, MediaQuery.sizeOf(context).width * 0.94),
+              ),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Header
                   Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFF0EA5E9),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(16),
-                        topRight: Radius.circular(16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 16, vertical: 14),
+                    decoration: BoxDecoration(
+                      color: scheme.primary,
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(24),
+                        topRight: Radius.circular(24),
                       ),
                     ),
                     child: Row(
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(8),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8),
+                            color: scheme.onPrimary.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(14),
                           ),
                           child: Icon(
                             _getRequestTypeIcon(request.type),
-                            color: Colors.white,
-                            size: 24,
+                            color: scheme.onPrimary,
+                            size: 22,
                           ),
                         ),
                         const SizedBox(width: 12),
@@ -1994,18 +2020,21 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                             children: [
                               Text(
                                 'تفاصيل الطلب',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
+                                style: TextStyle(
+                                  color: scheme.onPrimary,
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
+                              const SizedBox(height: 2),
                               Text(
                                 requestData?['RequestNumber']?.toString() ??
                                     request.requestNumber,
-                                style: const TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 14,
+                                style: TextStyle(
+                                  color:
+                                      scheme.onPrimary.withValues(alpha: 0.78),
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
@@ -2013,7 +2042,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                         ),
                         IconButton(
                           onPressed: () => Navigator.of(context).pop(),
-                          icon: const Icon(Icons.close, color: Colors.white),
+                          icon: Icon(Icons.close, color: scheme.onPrimary),
                         ),
                       ],
                     ),
@@ -2021,7 +2050,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                   // Content
                   Flexible(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.all(20),
+                      padding: const EdgeInsets.all(16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -2154,24 +2183,27 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                               'المرفقات',
                               Icons.attach_file,
                               [
-                                Container(
-                                  padding: const EdgeInsets.all(16),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.withOpacity(0.1),
-                                    borderRadius: BorderRadius.circular(8),
-                                    border: Border.all(
-                                        color: Colors.grey.withOpacity(0.2)),
-                                  ),
-                                  child: const Row(
+                                CustomCard(
+                                  padding: const EdgeInsets.all(14),
+                                  borderRadius: 14,
+                                  enableHover: false,
+                                  gloss: false,
+                                  color: scheme.surfaceContainerHighest,
+                                  boxShadow: const [],
+                                  child: Row(
                                     children: [
-                                      Icon(Icons.attach_file,
-                                          color: Colors.grey, size: 20),
-                                      SizedBox(width: 12),
+                                      Icon(
+                                        Icons.attach_file,
+                                        color: scheme.onSurfaceVariant,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
                                       Text(
                                         'لا توجد مرفقات لهذا الطلب',
                                         style: TextStyle(
-                                          color: Colors.grey,
+                                          color: scheme.onSurfaceVariant,
                                           fontStyle: FontStyle.italic,
+                                          fontWeight: FontWeight.w600,
                                         ),
                                       ),
                                     ],
@@ -2213,11 +2245,12 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                                         label: Text(Translations.getText('approve', lang)),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor:
-                                              const Color(0xFF10B981),
-                                          foregroundColor: Colors.white,
+                                              semantic?.success ?? scheme.tertiary,
+                                          foregroundColor:
+                                              semantic?.onSuccess ?? scheme.onTertiary,
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
-                                                BorderRadius.circular(8),
+                                                BorderRadius.circular(12),
                                           ),
                                         ),
                                       ),
@@ -2233,11 +2266,11 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                                         label: Text(Translations.getText('reject', lang)),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor:
-                                              const Color(0xFFEF4444),
-                                          foregroundColor: Colors.white,
+                                              scheme.error,
+                                          foregroundColor: scheme.onError,
                                           shape: RoundedRectangleBorder(
                                             borderRadius:
-                                                BorderRadius.circular(8),
+                                                BorderRadius.circular(12),
                                           ),
                                         ),
                                       ),
@@ -2258,8 +2291,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
         },
       );
     } catch (e) {
-      // إغلاق loading dialog
-      Navigator.of(context).pop();
+      closeLoadingIfVisible();
 
       // عرض رسالة خطأ
       ScaffoldMessenger.of(context).showSnackBar(
@@ -2274,12 +2306,15 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
           backgroundColor: Colors.red,
         ),
       );
+    } finally {
+      _isRequestDetailsBusy = false;
     }
   }
 
   Widget _buildDetailSection(
       String title, IconData icon, List<Widget> children) {
     try {
+      final scheme = Theme.of(context).colorScheme;
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -2288,37 +2323,35 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
               Container(
                 padding: const EdgeInsets.all(6),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF0EA5E9).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(6),
+                  color: scheme.primaryContainer.withValues(alpha: 0.6),
+                  borderRadius: BorderRadius.circular(10),
                 ),
                 child: Icon(
                   icon,
-                  color: const Color(0xFF0EA5E9),
+                  color: scheme.primary,
                   size: 18,
                 ),
               ),
-              const SizedBox(width: 8),
+              const SizedBox(width: 10),
               Text(
                 title,
-                style: const TextStyle(
-                  fontWeight: FontWeight.bold,
-                  fontSize: 16,
-                  color: Color(0xFF0EA5E9),
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                  color: scheme.onSurface,
                 ),
               ),
             ],
           ),
           const SizedBox(height: 12),
-          Container(
+          CustomCard(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.03),
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.withOpacity(0.1)),
-            ),
-            child: Column(
-              children: children,
-            ),
+            borderRadius: 16,
+            enableHover: false,
+            gloss: false,
+            color: scheme.surfaceContainerHighest,
+            boxShadow: const [],
+            child: Column(children: children),
           ),
         ],
       );
@@ -2363,6 +2396,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   }
 
   Widget _buildDetailRow(String label, String value) {
+    final scheme = Theme.of(context).colorScheme;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -2372,9 +2406,9 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
             width: 120,
             child: Text(
               label,
-              style: const TextStyle(
+              style: TextStyle(
                 fontWeight: FontWeight.w600,
-                color: Colors.grey,
+                color: scheme.onSurfaceVariant,
                 fontSize: 13,
               ),
             ),
@@ -2396,9 +2430,10 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                             ? _buildNumberChip(value)
                             : Text(
                                 value.isNotEmpty ? value : 'غير محدد',
-                                style: const TextStyle(
+                                style: TextStyle(
                                   fontWeight: FontWeight.w500,
                                   fontSize: 13,
+                                  color: scheme.onSurface,
                                 ),
                               ),
           ),
@@ -2408,50 +2443,52 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   }
 
   Widget _buildStatusChip(String status) {
+    final scheme = Theme.of(context).colorScheme;
+    final semantic = Theme.of(context).extension<AppSemanticColors>();
     Color statusColor;
     String statusText;
     IconData statusIcon;
 
     if (status.isEmpty) {
-      statusColor = Colors.grey;
+      statusColor = scheme.onSurfaceVariant;
       statusText = 'غير محدد';
       statusIcon = Icons.help;
     } else {
       final normalizedStatus = _normalizeStatusKey(status);
       switch (normalizedStatus) {
         case 'pending':
-          statusColor = const Color(0xFFF59E0B);
+          statusColor = semantic?.warning ?? const Color(0xFFF59E0B);
           statusText = 'معلق';
           statusIcon = Icons.pending;
           break;
         case 'approved':
-          statusColor = const Color(0xFF10B981);
+          statusColor = semantic?.success ?? const Color(0xFF22C55E);
           statusText = 'موافق عليه';
           statusIcon = Icons.check_circle;
           break;
         case 'rejected':
-          statusColor = const Color(0xFFEF4444);
+          statusColor = scheme.error;
           statusText = 'مرفوض';
           statusIcon = Icons.cancel;
           break;
         case 'cancelled':
-          statusColor = const Color(0xFF6B7280);
+          statusColor = scheme.outline;
           statusText = 'ملغي';
           statusIcon = Icons.block;
           break;
         default:
-          statusColor = Colors.grey;
+          statusColor = scheme.onSurfaceVariant;
           statusText = status;
           statusIcon = Icons.help;
       }
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: statusColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: statusColor.withOpacity(0.3)),
+        color: statusColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: statusColor.withValues(alpha: 0.32)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -2679,19 +2716,26 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       else {
         print('⚠️ لا توجد تفاصيل إضافية متاحة');
         widgets.add(
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: const Text(
-              'لا توجد تفاصيل إضافية متاحة',
-              style: TextStyle(
-                color: Colors.grey,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
+          Builder(
+            builder: (context) {
+              final scheme = Theme.of(context).colorScheme;
+              return CustomCard(
+                padding: const EdgeInsets.all(12),
+                borderRadius: 12,
+                enableHover: false,
+                gloss: false,
+                color: scheme.surfaceContainerHighest,
+                boxShadow: const [],
+                child: Text(
+                  'لا توجد تفاصيل إضافية متاحة',
+                  style: TextStyle(
+                    color: scheme.onSurfaceVariant,
+                    fontStyle: FontStyle.italic,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              );
+            },
           ),
         );
       }
@@ -2723,6 +2767,8 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   List<Widget> _buildApprovalsList(List approvals) {
     return approvals.map<Widget>((approval) {
       try {
+        final scheme = Theme.of(context).colorScheme;
+        final semantic = Theme.of(context).extension<AppSemanticColors>();
         final status = approval['Status']?.toString() ?? '';
         final approverName = approval['ApproverName']?.toString() ?? '';
         final approverPosition = approval['ApproverPosition']?.toString() ?? '';
@@ -2736,22 +2782,22 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
 
         switch (status.toLowerCase()) {
           case 'approved':
-            statusColor = const Color(0xFF10B981);
+            statusColor = semantic?.success ?? const Color(0xFF22C55E);
             statusText = 'موافق';
             statusIcon = Icons.check_circle;
             break;
           case 'rejected':
-            statusColor = const Color(0xFFEF4444);
+            statusColor = scheme.error;
             statusText = 'مرفوض';
             statusIcon = Icons.cancel;
             break;
           case 'pending':
-            statusColor = const Color(0xFFF59E0B);
+            statusColor = semantic?.warning ?? const Color(0xFFF59E0B);
             statusText = 'معلق';
             statusIcon = Icons.pending;
             break;
           default:
-            statusColor = Colors.grey;
+            statusColor = scheme.onSurfaceVariant;
             statusText = status;
             statusIcon = Icons.help;
         }
@@ -2761,13 +2807,13 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: isCurrentApprover
-                ? statusColor.withOpacity(0.1)
-                : Colors.grey.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(8),
+                ? statusColor.withValues(alpha: 0.10)
+                : scheme.surfaceContainerHighest,
+            borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isCurrentApprover
-                  ? statusColor.withOpacity(0.3)
-                  : Colors.grey.withOpacity(0.2),
+                  ? statusColor.withValues(alpha: 0.32)
+                  : scheme.outlineVariant.withValues(alpha: 0.70),
               width: isCurrentApprover ? 2 : 1,
             ),
           ),
@@ -2786,17 +2832,19 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                           approverName.isNotEmpty
                               ? approverName
                               : 'معتمد غير محدد',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
+                          style: TextStyle(
+                            fontWeight: FontWeight.w800,
                             fontSize: 14,
+                            color: scheme.onSurface,
                           ),
                         ),
                         if (approverPosition.isNotEmpty)
                           Text(
                             approverPosition,
-                            style: const TextStyle(
+                            style: TextStyle(
                               fontSize: 12,
-                              color: Colors.grey,
+                              color: scheme.onSurfaceVariant,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                       ],
@@ -2806,15 +2854,15 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                     padding:
                         const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: statusColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
+                      color: statusColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         if (isCurrentApprover) ...[
-                          const Icon(Icons.person,
-                              size: 12, color: Colors.blue),
+                          Icon(Icons.person,
+                              size: 12, color: scheme.primary),
                           const SizedBox(width: 4),
                         ],
                         Text(
@@ -2835,25 +2883,25 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                 Container(
                   padding: const EdgeInsets.all(8),
                   decoration: BoxDecoration(
-                    color: Colors.grey.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(4),
+                    color: scheme.surfaceContainerHighest,
+                    borderRadius: BorderRadius.circular(10),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
+                      Text(
                         'ملاحظات:',
                         style: TextStyle(
                           fontSize: 12,
                           fontWeight: FontWeight.w600,
-                          color: Colors.grey,
+                          color: scheme.onSurfaceVariant,
                         ),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         comments,
-                        style:
-                            const TextStyle(fontSize: 12, color: Colors.grey),
+                        style: TextStyle(
+                            fontSize: 12, color: scheme.onSurfaceVariant),
                       ),
                     ],
                   ),
@@ -2863,11 +2911,13 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
                 const SizedBox(height: 8),
                 Row(
                   children: [
-                    Icon(Icons.access_time, size: 14, color: Colors.grey),
+                    Icon(Icons.access_time,
+                        size: 14, color: scheme.onSurfaceVariant),
                     const SizedBox(width: 4),
                     Text(
                       'التاريخ: ${_formatDateTime(approvalDate)}',
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                      style: TextStyle(
+                          fontSize: 12, color: scheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -2898,17 +2948,19 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   }
 
   Color _getStatusColor(request_models.RequestStatus status) {
+    final scheme = Theme.of(context).colorScheme;
+    final semantic = Theme.of(context).extension<AppSemanticColors>();
     switch (status) {
       case request_models.RequestStatus.pending:
-        return const Color(0xFFF59E0B); // Amber
+        return semantic?.warning ?? const Color(0xFFF59E0B);
       case request_models.RequestStatus.approved:
-        return const Color(0xFF10B981); // Green
+        return semantic?.success ?? const Color(0xFF22C55E);
       case request_models.RequestStatus.rejected:
-        return const Color(0xFFEF4444); // Red
+        return scheme.error;
       case request_models.RequestStatus.cancelled:
-        return const Color(0xFF6B7280); // Gray
+        return scheme.outline;
       default:
-        return Colors.grey;
+        return scheme.onSurfaceVariant;
     }
   }
 
@@ -2958,44 +3010,46 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   }
 
   Widget _buildPriorityChip(String priority) {
+    final scheme = Theme.of(context).colorScheme;
+    final semantic = Theme.of(context).extension<AppSemanticColors>();
     Color priorityColor;
     String priorityText;
     IconData priorityIcon;
 
     if (priority.isEmpty) {
-      priorityColor = Colors.grey;
+      priorityColor = scheme.onSurfaceVariant;
       priorityText = 'غير محدد';
       priorityIcon = Icons.help;
     } else {
       switch (priority.toLowerCase()) {
         case 'high':
-          priorityColor = const Color(0xFFEF4444);
+          priorityColor = scheme.error;
           priorityText = 'عالية';
           priorityIcon = Icons.priority_high;
           break;
         case 'normal':
-          priorityColor = const Color(0xFFF59E0B);
+          priorityColor = semantic?.warning ?? const Color(0xFFF59E0B);
           priorityText = 'عادية';
           priorityIcon = Icons.remove;
           break;
         case 'low':
-          priorityColor = const Color(0xFF10B981);
+          priorityColor = semantic?.success ?? const Color(0xFF22C55E);
           priorityText = 'منخفضة';
           priorityIcon = Icons.keyboard_arrow_down;
           break;
         default:
-          priorityColor = Colors.grey;
+          priorityColor = scheme.onSurfaceVariant;
           priorityText = priority;
           priorityIcon = Icons.help;
       }
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: priorityColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: priorityColor.withOpacity(0.3)),
+        color: priorityColor.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: priorityColor.withValues(alpha: 0.32)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -3016,22 +3070,25 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   }
 
   Widget _buildAmountChip(String amount) {
+    final scheme = Theme.of(context).colorScheme;
+    final semantic = Theme.of(context).extension<AppSemanticColors>();
+    final color = semantic?.success ?? scheme.tertiary;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF10B981).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF10B981).withOpacity(0.3)),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.32)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.attach_money, color: Color(0xFF10B981), size: 16),
+          Icon(Icons.attach_money, color: color, size: 16),
           const SizedBox(width: 4),
           Text(
             amount,
-            style: const TextStyle(
-              color: Color(0xFF10B981),
+            style: TextStyle(
+              color: color,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -3042,22 +3099,25 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   }
 
   Widget _buildNumberChip(String number) {
+    final scheme = Theme.of(context).colorScheme;
+    final semantic = Theme.of(context).extension<AppSemanticColors>();
+    final color = semantic?.info ?? scheme.primary;
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
       decoration: BoxDecoration(
-        color: const Color(0xFF0EA5E9).withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFF0EA5E9).withOpacity(0.3)),
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: color.withValues(alpha: 0.32)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.numbers, color: Color(0xFF0EA5E9), size: 16),
+          Icon(Icons.numbers, color: color, size: 16),
           const SizedBox(width: 4),
           Text(
             number,
-            style: const TextStyle(
-              color: Color(0xFF0EA5E9),
+            style: TextStyle(
+              color: color,
               fontSize: 12,
               fontWeight: FontWeight.w600,
             ),
@@ -3163,19 +3223,21 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
   }
 
   Color _getFileTypeColor(String fileType) {
+    final scheme = Theme.of(context).colorScheme;
+    final semantic = Theme.of(context).extension<AppSemanticColors>();
     if (fileType.toLowerCase().contains('pdf')) {
-      return const Color(0xFFEF4444); // Red
+      return scheme.error;
     } else if (fileType.toLowerCase().contains('doc') ||
         fileType.toLowerCase().contains('docx')) {
-      return const Color(0xFF10B981); // Green
+      return scheme.primary;
     } else if (fileType.toLowerCase().contains('xls') ||
         fileType.toLowerCase().contains('xlsx')) {
-      return const Color(0xFFF59E0B); // Amber
+      return semantic?.warning ?? const Color(0xFFF59E0B);
     } else if (fileType.toLowerCase().contains('zip') ||
         fileType.toLowerCase().contains('rar')) {
-      return const Color(0xFF0EA5E9); // Blue
+      return scheme.secondary;
     } else {
-      return const Color(0xFF6B7280); // Gray
+      return scheme.outline;
     }
   }
 
