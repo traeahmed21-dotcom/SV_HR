@@ -868,7 +868,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
       print('📡 استجابة الخادم: ${response.success} - ${response.message}');
 
       if (response.success) {
-        _showSuccessDialog(response.message);
+        final confirmed = await _showSuccessDialog(response.message);
+        if (!mounted) return;
+        if (confirmed == true) {
+          Navigator.of(context).pop(true);
+        }
       } else {
         _showErrorSnackBar(response.message);
       }
@@ -886,11 +890,11 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
     }
   }
 
-  void _showSuccessDialog(String message) {
+  Future<bool?> _showSuccessDialog(String message) {
     final languageService = Provider.of<LanguageService>(context, listen: false);
     final lang = languageService.currentLocale.languageCode;
 
-    showDialog(
+    return showDialog<bool>(
       context: context,
       useRootNavigator: false,
       barrierDismissible: false,
@@ -907,8 +911,7 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(dialogContext).pop();
-                Navigator.of(context).pop(true);
+                Navigator.of(dialogContext).pop(true);
               },
               child: Text(Translations.getText('confirm', lang)),
             ),
