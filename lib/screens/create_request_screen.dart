@@ -892,8 +892,9 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
 
     showDialog(
       context: context,
+      useRootNavigator: false,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (dialogContext) {
         return AlertDialog(
           title: Row(
             children: [
@@ -906,9 +907,8 @@ class _CreateRequestScreenState extends State<CreateRequestScreen> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.of(context).pop();
-                Navigator.of(context)
-                    .pop(true); // إرجاع true للإشارة إلى النجاح
+                Navigator.of(dialogContext).pop();
+                Navigator.of(context).pop(true);
               },
               child: Text(Translations.getText('confirm', lang)),
             ),
