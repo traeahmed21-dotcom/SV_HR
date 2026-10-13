@@ -43,6 +43,14 @@ post_install do |installer|
     
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.5'
+      defs = config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] || ['$(inherited)']
+      if defs.is_a?(String)
+        defs = [defs]
+      end
+      unless defs.include?('PERMISSION_MICROPHONE=1')
+        defs << 'PERMISSION_MICROPHONE=1'
+      end
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] = defs
     end
   end
 end
