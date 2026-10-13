@@ -5,9 +5,9 @@ class CompanyInfo {
   static const String companyNameAr = 'Smart Vision';
   static const String companyNameEn = 'Smart Vision';
 
-  static const String supportEmail = 'support@example.com';
-  static const String supportPhone = '+966500000000';
-  static const String websiteUrl = 'https://example.com';
+  static const String supportEmail = 'info@perfect-solutions.net';
+  static const String supportPhone = '+966541103396';
+  static const String websiteUrl = 'https://sv-hr.com/';
 
   static String aboutAr() {
     return '''
@@ -73,4 +73,3 @@ We may update these terms as needed. Continued use of the app means you accept t
 ''';
   }
 }
-

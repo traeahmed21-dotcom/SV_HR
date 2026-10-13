@@ -344,7 +344,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
             future: PackageInfo.fromPlatform(),
             builder: (context, snapshot) {
               final version = snapshot.hasData
-                  ? '${snapshot.data!.version}+${snapshot.data!.buildNumber}'
+                  ? (() {
+                      final v = snapshot.data!.version;
+                      final b = snapshot.data!.buildNumber.trim();
+                      return b.isEmpty ? v : '$v+$b';
+                    })()
                   : '-';
               return Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
