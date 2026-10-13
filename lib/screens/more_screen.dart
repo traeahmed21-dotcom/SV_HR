@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/api_models.dart' as api_models;
-import '../models/employee.dart';
 import '../services/language_service.dart';
 import '../services/translations.dart';
 import '../widgets/custom_card.dart';
@@ -10,7 +9,6 @@ import 'approvals_screen.dart'
 import 'employee_chats_screen.dart';
 import 'notifications_screen.dart';
 import 'payroll_screen.dart';
-import 'profile_screen.dart';
 import 'salary_details_screen.dart';
 import 'task_creator_screen.dart';
 import 'user_tasks_screen.dart';
@@ -40,27 +38,10 @@ class MoreScreen extends StatelessWidget {
   String _t(BuildContext context, String key) =>
       Translations.getText(key, _lang(context));
 
-  Employee _asEmployee(BuildContext context) {
-    final lang = _lang(context);
-    return Employee(
-      id: employeeData.employeeID.toString(),
-      name: employeeData.name,
-      email: employeeData.email,
-      position:
-          '${Translations.getText('employee_number_short', lang)}: ${employeeData.employeeNumber}',
-      department: '',
-      phone: '',
-      employeeNumber: employeeData.employeeNumber,
-      hireDate: DateTime.now(),
-      salary: 0,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isRTL = context.watch<LanguageService>().isArabic;
-    final employee = _asEmployee(context);
 
     return Directionality(
       textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
@@ -106,20 +87,8 @@ class MoreScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  Icon(Icons.chevron_right, color: scheme.onSurfaceVariant),
                 ],
               ),
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ProfileScreen(
-                      employee: employee,
-                      clientId: employeeData.clientID,
-                    ),
-                  ),
-                );
-              },
             ),
             const SizedBox(height: 16),
             if (employeeData.isApprover || hasTaskCreatorAccess) ...[
@@ -361,7 +330,6 @@ class _MenuTile extends StatelessWidget {
   final String title;
   final IconData icon;
   final int? badge;
-  final bool enabled;
   final VoidCallback onTap;
   final Color? leadingBg;
   final Color? leadingFg;
@@ -371,7 +339,6 @@ class _MenuTile extends StatelessWidget {
     required this.icon,
     required this.onTap,
     this.badge,
-    this.enabled = true,
     this.leadingBg,
     this.leadingFg,
   });
@@ -383,28 +350,24 @@ class _MenuTile extends StatelessWidget {
         ? Badge(label: Text('${badge ?? 0}'))
         : Icon(Icons.chevron_right, color: scheme.onSurfaceVariant);
 
-    return Opacity(
-      opacity: enabled ? 1 : 0.5,
-      child: ListTile(
-        enabled: enabled,
-        onTap: enabled ? onTap : null,
-        leading: Container(
-          width: 40,
-          height: 40,
-          decoration: BoxDecoration(
-            color: leadingBg ?? scheme.primaryContainer,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: Icon(icon, color: leadingFg ?? scheme.onPrimaryContainer),
+    return ListTile(
+      onTap: onTap,
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: leadingBg ?? scheme.primaryContainer,
+          borderRadius: BorderRadius.circular(14),
         ),
-        title: Text(
-          title,
-          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                fontWeight: FontWeight.w600,
-              ),
-        ),
-        trailing: trailing,
+        child: Icon(icon, color: leadingFg ?? scheme.onPrimaryContainer),
       ),
+      title: Text(
+        title,
+        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+      ),
+      trailing: trailing,
     );
   }
 }

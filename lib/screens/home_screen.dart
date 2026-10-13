@@ -23,7 +23,6 @@ import 'attendance_screen.dart';
 import 'attendance_history_screen.dart';
 import 'approvals_screen.dart'
     if (dart.library.html) 'approvals_screen_web_stub.dart';
-import 'profile_screen.dart';
 import 'login_screen.dart';
 import 'notifications_screen.dart';
 import 'shift_info_screen.dart';
@@ -919,20 +918,6 @@ class _HomeScreenState extends State<HomeScreen> {
         title: Text(
           Translations.getText('dashboard', lang),
           style: const TextStyle(fontWeight: FontWeight.bold),
-        ),
-        leading: IconButton(
-          icon: const Icon(Icons.person),
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => ProfileScreen(
-                  employee: _currentEmployee!,
-                  clientId: widget.employeeData?.clientID ?? 30,
-                ),
-              ),
-            );
-          },
         ),
         actions: [
           // Notification Icon

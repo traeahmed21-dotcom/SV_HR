@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/employee.dart';
 import '../services/language_service.dart';
 import '../services/translations.dart';
 import '../widgets/custom_card.dart';
+import 'about_us_screen.dart';
+import 'contact_us_screen.dart';
+import 'privacy_policy_screen.dart';
+import 'terms_conditions_screen.dart';
 import 'login_screen.dart';
 import 'employee_full_info_screen.dart';
 import 'change_password_screen.dart';
@@ -54,6 +59,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
               // Actions
               _buildActions(context),
+              const SizedBox(height: 24),
+              _buildAppInfo(context),
             ],
           ),
         ),
@@ -267,6 +274,114 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _handleLogout(context);
             },
             isDestructive: true,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppInfo(BuildContext context) {
+    final languageService =
+        Provider.of<LanguageService>(context, listen: false);
+    final lang = languageService.isArabic ? 'ar' : 'en';
+    final scheme = Theme.of(context).colorScheme;
+
+    return CustomCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            Translations.getText('app_info', lang),
+            style: const TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 20),
+          _buildActionTile(
+            Translations.getText('about_us', lang),
+            Icons.info_outline,
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const AboutUsScreen()),
+              );
+            },
+          ),
+          _buildActionTile(
+            Translations.getText('privacy_policy', lang),
+            Icons.privacy_tip_outlined,
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen()),
+              );
+            },
+          ),
+          _buildActionTile(
+            Translations.getText('terms_conditions', lang),
+            Icons.description_outlined,
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const TermsConditionsScreen()),
+              );
+            },
+          ),
+          _buildActionTile(
+            Translations.getText('contact_us', lang),
+            Icons.support_agent_outlined,
+            () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ContactUsScreen()),
+              );
+            },
+          ),
+          const SizedBox(height: 8),
+          FutureBuilder<PackageInfo>(
+            future: PackageInfo.fromPlatform(),
+            builder: (context, snapshot) {
+              final version = snapshot.hasData
+                  ? '${snapshot.data!.version}+${snapshot.data!.buildNumber}'
+                  : '-';
+              return Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: scheme.primaryContainer,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        Icons.system_update_alt,
+                        color: scheme.onPrimaryContainer,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        Translations.getText('app_version', lang),
+                        style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                              fontWeight: FontWeight.w600,
+                            ),
+                      ),
+                    ),
+                    Text(
+                      version,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w700,
+                          ),
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),

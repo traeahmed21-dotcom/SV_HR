@@ -47,7 +47,6 @@
 		<true/>
 		<key>UIStatusBarHidden</key>
 		<false/>
-		
 		<!-- Location Permissions -->
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>نحتاج الوصول إلى موقعك لتسجيل الحضور والانصراف بدقة</string>
@@ -55,23 +54,18 @@
 		<string>نحتاج الوصول إلى موقعك حتى عند عمل التطبيق في الخلفية لتتبع الحضور</string>
 		<key>NSLocationAlwaysUsageDescription</key>
 		<string>نحتاج الوصول إلى موقعك بشكل دائم لتتبع الحضور والانصراف</string>
-		
 		<!-- Biometric Authentication -->
 		<key>NSFaceIDUsageDescription</key>
 		<string>نحتاج استخدام Face ID أو Touch ID لتسجيل الدخول الآمن</string>
-		
 		<!-- Camera Permissions -->
 		<key>NSCameraUsageDescription</key>
 		<string>نحتاج الوصول إلى الكاميرا لالتقاط الصور الشخصية</string>
-		
 		<!-- Photo Library Permissions -->
 		<key>NSPhotoLibraryUsageDescription</key>
 		<string>نحتاج الوصول إلى الصور لاختيار الصور الشخصية</string>
-		
 		<!-- Microphone Permissions -->
 		<key>NSMicrophoneUsageDescription</key>
 		<string>نحتاج الوصول إلى الميكروفون للتسجيل الصوتي</string>
-		
 		<!-- Network Permissions -->
 		<key>NSAppTransportSecurity</key>
 		<dict>
@@ -86,11 +80,10 @@
 				</dict>
 			</dict>
 		</dict>
-		
 		<!-- Background Modes -->
 		<key>UIBackgroundModes</key>
 		<array>
-                        <string>audio</string>
+			<string>audio</string>
 			<string>location</string>
 			<string>fetch</string>
 			<string>processing</string>
@@ -99,31 +92,24 @@
 		<array>
 			<string>com.perfectsolutions.mtzhr.refreshTask</string>
 		</array>
-		
 		<!-- Notification Permissions -->
 		<key>UNUserNotificationCenter</key>
 		<true/>
-		
 		<!-- Firebase Configuration -->
 		<key>FirebaseAppDelegateProxyEnabled</key>
 		<false/>
-		
 		<!-- Minimum iOS Version -->
 		<key>MinimumOSVersion</key>
 		<string>12.0</string>
-		
 		<!-- Device Orientation -->
 		<key>UIRequiresFullScreen</key>
 		<false/>
-		
 		<!-- Status Bar Configuration -->
 		<key>UIViewControllerBasedStatusBarAppearance</key>
 		<true/>
-		
 		<!-- Privacy Settings -->
 		<key>NSUserTrackingUsageDescription</key>
 		<string>قد نستخدم بياناتك لتحسين الخدمة وتخصيص المحتوى</string>
-		
 		<!-- App Store Connect -->
 		<key>ITSAppUsesNonExemptEncryption</key>
 		<false/>

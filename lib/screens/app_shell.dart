@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../models/api_models.dart' as api_models;
+import '../models/employee.dart';
 import '../services/api_service.dart';
 import '../services/language_service.dart';
 import '../services/translations.dart';
@@ -8,7 +9,7 @@ import 'home_screen.dart';
 import 'requests_screen.dart';
 import 'employee_chats_screen.dart';
 import 'user_tasks_screen.dart';
-import 'more_screen.dart';
+import 'profile_screen.dart';
 
 class AppShell extends StatefulWidget {
   final String employeeNumber;
@@ -35,12 +36,9 @@ class _AppShellState extends State<AppShell> {
   static const int _tabCount = 5;
   late List<GlobalKey<NavigatorState>> _navigatorKeys;
 
-  int _unreadNotifications = 0;
   int _unreadChats = 0;
-  int _pendingApprovals = 0;
   int _pendingRequests = 0;
   int _pendingTasks = 0;
-  bool _hasTaskCreatorAccess = false;
 
   @override
   void initState() {
@@ -57,12 +55,25 @@ class _AppShellState extends State<AppShell> {
 
   String _t(BuildContext context, String key) => Translations.getText(key, _lang(context));
 
+  Employee _asEmployee(BuildContext context) {
+    final lang = _lang(context);
+    return Employee(
+      id: widget.employeeData.employeeID.toString(),
+      name: widget.employeeData.name,
+      email: widget.employeeData.email,
+      position:
+          '${Translations.getText('employee_number_short', lang)}: ${widget.employeeData.employeeNumber}',
+      department: '',
+      phone: '',
+      employeeNumber: widget.employeeData.employeeNumber,
+      hireDate: DateTime.now(),
+      salary: 0,
+    );
+  }
+
   Future<void> _refreshBadges() async {
     final clientId = widget.employeeData.clientID;
     final employeeId = widget.employeeData.employeeID;
-
-    final unreadNotifications =
-        await ApiService.getUnreadNotificationsCount(clientId, employeeId);
 
     final unreadChats =
         await ApiService.getChatUnreadCount(clientId, employeeId).catchError((_) {
@@ -89,38 +100,11 @@ class _AppShellState extends State<AppShell> {
       return 0;
     });
 
-    int approvalsCount = 0;
-    if (widget.employeeData.isApprover) {
-      final approvalsResp = await ApiService.getPendingRequestsForApproval(
-        clientId,
-        approverId: employeeId,
-      );
-      if (approvalsResp['Success'] == true && approvalsResp['Data'] is List) {
-        approvalsCount = (approvalsResp['Data'] as List).length;
-      }
-    }
-
-    final creatorIdForApi =
-        int.tryParse(widget.employeeData.employeeNumber) ?? employeeId;
-    final taskCreatorResp = await ApiService.getTaskCreatorManagedEmployees(
-      clientId,
-      creatorEmployeeId: creatorIdForApi,
-    ).catchError((_) {
-      return {'Success': false, 'Data': [], 'Permission': null};
-    });
-    final taskOk = taskCreatorResp['Success'] == true;
-    final perm = taskCreatorResp['Permission'];
-    final canCreate = perm is Map && (perm['CanCreate'] == true || '${perm['CanCreate']}'.toLowerCase() == 'true');
-    final hasTaskCreatorAccess = taskOk && canCreate;
-
     if (!mounted) return;
     setState(() {
-      _unreadNotifications = unreadNotifications;
       _unreadChats = unreadChats;
       _pendingRequests = pendingRequests;
-      _pendingApprovals = approvalsCount;
       _pendingTasks = pendingTasks;
-      _hasTaskCreatorAccess = hasTaskCreatorAccess;
     });
   }
 
@@ -169,12 +153,9 @@ class _AppShellState extends State<AppShell> {
         );
         break;
       case 4:
-        page = MoreScreen(
-          employeeNumber: widget.employeeNumber,
-          employeeData: widget.employeeData,
-          unreadNotifications: _unreadNotifications,
-          pendingApprovals: _pendingApprovals,
-          hasTaskCreatorAccess: _hasTaskCreatorAccess,
+        page = ProfileScreen(
+          employee: _asEmployee(context),
+          clientId: widget.employeeData.clientID,
         );
         break;
       default:
@@ -196,8 +177,6 @@ class _AppShellState extends State<AppShell> {
         _index = 0;
       }
     }
-
-    final moreBadge = 0;
 
     return Scaffold(
       body: IndexedStack(
@@ -244,9 +223,9 @@ class _AppShellState extends State<AppShell> {
             label: _t(context, 'tasks_title'),
           ),
           NavigationDestination(
-            icon: _maybeBadge(moreBadge, const Icon(Icons.menu_outlined)),
-            selectedIcon: _maybeBadge(moreBadge, const Icon(Icons.menu)),
-            label: _t(context, 'more'),
+            icon: const Icon(Icons.person_outline),
+            selectedIcon: const Icon(Icons.person),
+            label: _t(context, 'profile'),
           ),
         ],
       ),
