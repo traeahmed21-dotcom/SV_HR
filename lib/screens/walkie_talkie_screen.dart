@@ -235,8 +235,86 @@ class _WalkieTalkieScreenState extends State<WalkieTalkieScreen>
   }
 
   Future<bool> _ensureAudioPermissions() async {
-    final micStatus = await Permission.microphone.request();
-    return micStatus.isGranted;
+    final status = await Permission.microphone.status;
+    if (status.isGranted) {
+      return true;
+    }
+
+    if (!mounted) return false;
+
+    final title = Translations.getText('walkie_mic_permission_title', _lang);
+
+    Future<void> openSettingsDialog() async {
+      final shouldOpenSettings = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) {
+          return AlertDialog(
+            title: Text(title),
+            content: Text(
+              Translations.getText('walkie_mic_permission_settings', _lang),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: Text(Translations.getText('cancel', _lang)),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: Text(Translations.getText('app_settings', _lang)),
+              ),
+            ],
+          );
+        },
+      );
+
+      if (shouldOpenSettings == true) {
+        await openAppSettings();
+      }
+    }
+
+    if (status.isPermanentlyDenied || status.isRestricted) {
+      await openSettingsDialog();
+      return false;
+    }
+
+    final shouldRequest = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(title),
+          content: Text(
+            Translations.getText('walkie_mic_permission_request', _lang),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(Translations.getText('cancel', _lang)),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: Text(Translations.getText('walkie_grant_permission', _lang)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldRequest != true) {
+      return false;
+    }
+
+    final result = await Permission.microphone.request();
+    if (result.isGranted) {
+      return true;
+    }
+
+    if (!mounted) return false;
+
+    if (result.isPermanentlyDenied || result.isRestricted) {
+      await openSettingsDialog();
+    }
+
+    return false;
   }
 
   Future<bool> _ensureNotificationPermissions() async {
@@ -619,11 +697,6 @@ class _WalkieTalkieScreenState extends State<WalkieTalkieScreen>
     await _ensureDeviceId();
 
     if (!await _ensureAudioPermissions()) {
-      if (!mounted) return;
-      _showMessage(
-        Translations.getText('walkie_permission_required', _lang),
-        isError: true,
-      );
       return;
     }
 

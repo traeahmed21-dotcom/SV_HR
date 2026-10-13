@@ -88,6 +88,12 @@ class Translations {
       'walkie_load_error': 'تعذر تحميل مجموعات الووكي-توكي',
       'walkie_permission_required':
           'يجب منح إذن الميكروفون لاستخدام الووكي-توكي',
+      'walkie_mic_permission_title': 'إذن الميكروفون',
+      'walkie_mic_permission_request':
+          'يحتاج الووكي-توكي إلى إذن الميكروفون. هل تريد منحه الآن؟',
+      'walkie_mic_permission_settings':
+          'تم رفض إذن الميكروفون. يمكنك تفعيله من إعدادات التطبيق.',
+      'walkie_grant_permission': 'منح الإذن',
       'walkie_connect_live_error': 'تعذر الاتصال بالغرفة الصوتية الحية',
       'walkie_microphone_enable_error': 'تعذر تشغيل الميكروفون في الجلسة',
       'walkie_room_ready': 'تم الاتصال بالغرفة الصوتية بنجاح',
@@ -1092,6 +1098,12 @@ class Translations {
       'no_notifications': 'No notifications',
       'walkie_permission_required':
           'Microphone permission is required to use walkie-talkie',
+      'walkie_mic_permission_title': 'Microphone permission',
+      'walkie_mic_permission_request':
+          'Walkie-talkie needs microphone access. Would you like to allow it now?',
+      'walkie_mic_permission_settings':
+          'Microphone permission was denied. You can enable it from the app settings.',
+      'walkie_grant_permission': 'Allow',
       'walkie_connect_live_error': 'Could not connect to the live audio room',
       'walkie_microphone_enable_error':
           'Could not enable microphone inside the session',
