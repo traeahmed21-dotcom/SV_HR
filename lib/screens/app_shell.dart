@@ -39,6 +39,7 @@ class _AppShellState extends State<AppShell> {
   int _unreadChats = 0;
   int _pendingRequests = 0;
   int _pendingTasks = 0;
+  DateTime? _lastBackPressAt;
 
   @override
   void initState() {
@@ -164,6 +165,40 @@ class _AppShellState extends State<AppShell> {
     return MaterialPageRoute(builder: (_) => page, settings: settings);
   }
 
+  Future<bool> _onWillPop(BuildContext context) async {
+    final nav = _navigatorKeys[_index].currentState;
+    if (nav != null) {
+      final didPop = await nav.maybePop();
+      if (didPop) return false;
+    }
+
+    if (_index != 0) {
+      setState(() => _index = 0);
+      return false;
+    }
+
+    final now = DateTime.now();
+    final last = _lastBackPressAt;
+    final allowExit =
+        last != null && now.difference(last) <= const Duration(seconds: 2);
+    if (allowExit) return true;
+
+    _lastBackPressAt = now;
+    final lang = _lang(context);
+    final message = lang == 'ar'
+        ? 'اضغط رجوع مرة أخرى للخروج'
+        : 'Press back again to exit';
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        content: Text(message),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -178,56 +213,71 @@ class _AppShellState extends State<AppShell> {
       }
     }
 
-    return Scaffold(
-      body: IndexedStack(
-        index: _index,
-        children: List.generate(
-          _tabCount,
-          (i) => Navigator(
-            key: _navigatorKeys[i],
-            onGenerateRoute: (settings) => _onGenerateRoute(i, settings),
+    return WillPopScope(
+      onWillPop: () => _onWillPop(context),
+      child: Scaffold(
+        body: IndexedStack(
+          index: _index,
+          children: List.generate(
+            _tabCount,
+            (i) => Navigator(
+              key: _navigatorKeys[i],
+              onGenerateRoute: (settings) => _onGenerateRoute(i, settings),
+            ),
           ),
         ),
-      ),
-      bottomNavigationBar: NavigationBar(
-        height: 72,
-        selectedIndex: _index,
-        onDestinationSelected: _onDestinationSelected,
-        backgroundColor: Theme.of(context).navigationBarTheme.backgroundColor,
-        indicatorColor: scheme.primaryContainer,
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.dashboard_outlined),
-            selectedIcon: const Icon(Icons.dashboard),
-            label: _t(context, 'home'),
-          ),
-          NavigationDestination(
-            icon: _maybeBadge(
-              _pendingRequests,
-              const Icon(Icons.assignment_outlined),
+        bottomNavigationBar: NavigationBar(
+          height: 72,
+          selectedIndex: _index,
+          onDestinationSelected: _onDestinationSelected,
+          backgroundColor: Theme.of(context).navigationBarTheme.backgroundColor,
+          indicatorColor: scheme.primaryContainer,
+          destinations: [
+            NavigationDestination(
+              icon: const Icon(Icons.dashboard_outlined),
+              selectedIcon: const Icon(Icons.dashboard),
+              label: _t(context, 'home'),
             ),
-            selectedIcon: _maybeBadge(
-              _pendingRequests,
-              const Icon(Icons.assignment),
+            NavigationDestination(
+              icon: _maybeBadge(
+                _pendingRequests,
+                const Icon(Icons.assignment_outlined),
+              ),
+              selectedIcon: _maybeBadge(
+                _pendingRequests,
+                const Icon(Icons.assignment),
+              ),
+              label: _t(context, 'requests'),
             ),
-            label: _t(context, 'requests'),
-          ),
-          NavigationDestination(
-            icon: _maybeBadge(_unreadChats, const Icon(Icons.chat_bubble_outline)),
-            selectedIcon: _maybeBadge(_unreadChats, const Icon(Icons.chat_bubble)),
-            label: _t(context, 'employee_chats'),
-          ),
-          NavigationDestination(
-            icon: _maybeBadge(_pendingTasks, const Icon(Icons.task_alt_outlined)),
-            selectedIcon: _maybeBadge(_pendingTasks, const Icon(Icons.task_alt)),
-            label: _t(context, 'tasks_title'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.person_outline),
-            selectedIcon: const Icon(Icons.person),
-            label: _t(context, 'profile'),
-          ),
-        ],
+            NavigationDestination(
+              icon: _maybeBadge(
+                _unreadChats,
+                const Icon(Icons.chat_bubble_outline),
+              ),
+              selectedIcon: _maybeBadge(
+                _unreadChats,
+                const Icon(Icons.chat_bubble),
+              ),
+              label: _t(context, 'employee_chats'),
+            ),
+            NavigationDestination(
+              icon: _maybeBadge(
+                _pendingTasks,
+                const Icon(Icons.task_alt_outlined),
+              ),
+              selectedIcon: _maybeBadge(
+                _pendingTasks,
+                const Icon(Icons.task_alt),
+              ),
+              label: _t(context, 'tasks_title'),
+            ),
+            NavigationDestination(
+              icon: const Icon(Icons.person_outline),
+              selectedIcon: const Icon(Icons.person),
+              label: _t(context, 'profile'),
+            ),
+          ],
+        ),
       ),
     );
   }
