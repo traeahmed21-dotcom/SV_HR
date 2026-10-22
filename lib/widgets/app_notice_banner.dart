@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/app_notice.dart';
 import '../theme/app_semantic_colors.dart';
+import 'scale_down_text.dart';
 
 class AppNoticeBanner extends StatelessWidget {
   final AppNotice notice;
@@ -130,10 +131,11 @@ class AppNoticeBanner extends StatelessWidget {
                         ),
                         elevation: 0,
                       ),
-                      child: Text(
+                      child: ScaleDownText(
                         buttonText.isEmpty
                             ? (lang == 'ar' ? 'فتح' : 'Open')
                             : buttonText,
+                        textAlign: TextAlign.center,
                         style: const TextStyle(
                           fontWeight: FontWeight.w900,
                           fontSize: 13,
@@ -150,4 +152,3 @@ class AppNoticeBanner extends StatelessWidget {
     );
   }
 }
-

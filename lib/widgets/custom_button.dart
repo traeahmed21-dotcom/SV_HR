@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'scale_down_text.dart';
+
 class CustomButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
@@ -37,7 +39,7 @@ class CustomButton extends StatelessWidget {
     final onPrimaryColor = foregroundColor ?? (effectiveIsOutlined ? effectiveBackgroundColor : Colors.white);
 
     Widget content = Row(
-      mainAxisSize: MainAxisSize.min,
+      mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         if (isLoading)
@@ -54,13 +56,16 @@ class CustomButton extends StatelessWidget {
             Icon(icon, size: 20, color: onPrimaryColor),
             const SizedBox(width: 8),
           ],
-          Text(
-            text,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: onPrimaryColor,
-              fontFamily: 'Tajawal',
+          Flexible(
+            child: ScaleDownText(
+              text,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: onPrimaryColor,
+                fontFamily: 'Tajawal',
+              ),
             ),
           ),
         ],

@@ -312,7 +312,7 @@ class Translations {
       'tasks_mark_inprogress': 'قيد التنفيذ',
       'tasks_mark_done': 'تم الإنجاز',
       'tasks_details_title': 'تفاصيل المهمة',
-      'task_creator_title': 'إدارة مهام الموظفين',
+      'task_creator_title': 'إدارة المهام',
       'task_creator_create_title': 'إنشاء مهمة',
       'task_creator_my_tasks': 'المهام المنشأة',
       'task_creator_choose_employees': 'تحديد الموظفين',
@@ -354,7 +354,7 @@ class Translations {
       'october': 'أكتوبر',
       'november': 'نوفمبر',
       'december': 'ديسمبر',
-      'shifts_and_location': 'ورديات ومكان عملي',
+      'shifts_and_location': 'الورديات',
       'view_all': 'عرض الكل',
 
       // الحضور والانصراف

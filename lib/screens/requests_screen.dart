@@ -820,9 +820,12 @@ class _RequestsScreenState extends State<RequestsScreen> {
   }
 
   void _showRequestDetails(request_models.EmployeeRequest request) async {
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+
     // إظهار مؤشر التحميل أولاً
     showDialog(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return const Center(
@@ -835,17 +838,23 @@ class _RequestsScreenState extends State<RequestsScreen> {
       // جلب تفاصيل الطلب من API
       final details = await _fetchRequestDetails(request.id);
       if (!mounted) {
+        if (rootNavigator.canPop()) {
+          rootNavigator.pop();
+        }
         return;
       }
-      Navigator.of(context).pop(); // إغلاق مؤشر التحميل
+      rootNavigator.pop(); // إغلاق مؤشر التحميل
 
       // عرض تفاصيل الطلب
       _showRequestDetailsDialog(request, details);
     } catch (e) {
       if (!mounted) {
+        if (rootNavigator.canPop()) {
+          rootNavigator.pop();
+        }
         return;
       }
-      Navigator.of(context).pop(); // إغلاق مؤشر التحميل
+      rootNavigator.pop(); // إغلاق مؤشر التحميل
       // عرض تفاصيل الطلب بدون معلومات إضافية
       _showRequestDetailsDialog(request, null);
     }

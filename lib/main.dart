@@ -160,9 +160,15 @@ class MyApp extends StatelessWidget {
 
             // دعم الاتجاه من اليمين إلى اليسار
             builder: (context, child) {
-              return Directionality(
-                textDirection: languageService.currentDirection,
-                child: child!,
+              final media = MediaQuery.of(context);
+              final currentScale = media.textScaler.scale(1.0);
+              final clamped = currentScale.clamp(1.0, 1.15);
+              return MediaQuery(
+                data: media.copyWith(textScaler: TextScaler.linear(clamped)),
+                child: Directionality(
+                  textDirection: languageService.currentDirection,
+                  child: child!,
+                ),
               );
             },
 

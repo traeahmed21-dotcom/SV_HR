@@ -33,6 +33,7 @@ import '../widgets/responsive_center.dart';
 import '../widgets/ads_slider.dart';
 import '../widgets/app_notice_banner.dart';
 import '../widgets/custom_card.dart';
+import '../widgets/scale_down_text.dart';
 import '../theme/app_semantic_colors.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -1261,11 +1262,15 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: semantic.infoContainer.withValues(alpha: 0.7),
+                  color: semantic.infoContainer,
                   borderRadius: BorderRadius.circular(12),
                   border: null,
                 ),
-                child: Icon(Icons.access_time, size: 20, color: semantic.info),
+                child: Icon(
+                  Icons.access_time,
+                  size: 20,
+                  color: scheme.onSurface.withValues(alpha: 0.9),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -1659,7 +1664,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       const SizedBox(width: 12),
                       Expanded(
-                        child: Text(
+                        child: ScaleDownText(
                           Translations.getText('admin_section_title', lang),
                           style: Theme.of(context)
                               .textTheme
@@ -1722,6 +1727,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
     final startOffset = _weekdayIndexSundayFirst(firstOfMonth);
     final now = DateTime.now();
+    final isRtl = Directionality.of(context) == ui.TextDirection.rtl;
 
     String monthKey(int m) {
       const keys = [
@@ -1743,12 +1749,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final title =
         '${Translations.getText(monthKey(month.month), lang)} ${month.year}';
-    final workBg = semantic.success.withValues(alpha: 0.20);
-    final offBg = scheme.error.withValues(alpha: 0.20);
-    final unknownBg = scheme.surfaceContainerHighest.withValues(alpha: 0.25);
-    final workBorder = semantic.success.withValues(alpha: 0.62);
-    final offBorder = scheme.error.withValues(alpha: 0.62);
-    final unknownBorder = scheme.outlineVariant.withValues(alpha: 0.55);
 
     final headers = [
       Translations.getText('weekday_sunday_short', lang),
@@ -1761,156 +1761,150 @@ class _HomeScreenState extends State<HomeScreen> {
     ];
 
     return _buildBorderedSectionCard(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 18, 20, 18),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Expanded(
-                child: Text(
-                  Translations.getText('calendar', lang),
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.bold),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: scheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(12),
+                  border: null,
+                ),
+                child: Icon(
+                  Icons.calendar_month_rounded,
+                  size: 20,
+                  color: scheme.onSurface.withValues(alpha: 0.9),
                 ),
               ),
-              Container(
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(
-                    color: scheme.outlineVariant.withValues(alpha: 0.6),
-                    width: 1,
-                  ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _calendarMonth = DateTime(
-                              _calendarMonth.year, _calendarMonth.month - 1);
-                        });
-                        _reloadCompanyHolidaysForMonth();
-                      },
-                      icon: const Icon(Icons.chevron_left, size: 22),
-                      style: IconButton.styleFrom(
-                        padding: const EdgeInsets.all(8),
-                        visualDensity: VisualDensity.compact,
-                      ),
+                    Text(
+                      Translations.getText('calendar', lang),
+                      style: Theme.of(context)
+                          .textTheme
+                          .headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.bold),
                     ),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8),
-                      child: Text(
-                        title,
-                        style: Theme.of(context)
-                            .textTheme
-                            .titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                    ),
-                    IconButton(
-                      onPressed: () {
-                        setState(() {
-                          _calendarMonth = DateTime(
-                              _calendarMonth.year, _calendarMonth.month + 1);
-                        });
-                        _reloadCompanyHolidaysForMonth();
-                      },
-                      icon: const Icon(Icons.chevron_right, size: 22),
-                      style: IconButton.styleFrom(
-                        padding: const EdgeInsets.all(8),
-                        visualDensity: VisualDensity.compact,
-                      ),
+                    const SizedBox(height: 2),
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                            fontWeight: FontWeight.w700,
+                          ),
                     ),
                   ],
                 ),
               ),
+              Material(
+                color: scheme.surfaceContainerHighest.withValues(alpha: 0.55),
+                borderRadius: BorderRadius.circular(999),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton.filledTonal(
+                        onPressed: () {
+                          setState(() {
+                            _calendarMonth = DateTime(
+                                _calendarMonth.year, _calendarMonth.month - 1);
+                          });
+                          _reloadCompanyHolidaysForMonth();
+                        },
+                        icon: Icon(
+                          isRtl
+                              ? Icons.chevron_right_rounded
+                              : Icons.chevron_left_rounded,
+                        ),
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size(40, 40),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 150),
+                        child: ScaleDownText(
+                          title,
+                          textAlign: TextAlign.center,
+                          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: scheme.onSurface,
+                              ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      IconButton.filledTonal(
+                        onPressed: () {
+                          setState(() {
+                            _calendarMonth = DateTime(
+                                _calendarMonth.year, _calendarMonth.month + 1);
+                          });
+                          _reloadCompanyHolidaysForMonth();
+                        },
+                        icon: Icon(
+                          isRtl
+                              ? Icons.chevron_left_rounded
+                              : Icons.chevron_right_rounded,
+                        ),
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size(40, 40),
+                          visualDensity: VisualDensity.compact,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 14),
           Container(
             padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  scheme.primaryContainer.withValues(alpha: 0.14),
-                  scheme.surfaceContainerHighest.withValues(alpha: 0.18),
-                  scheme.surface,
-                ],
-                stops: const [0.0, 0.45, 1.0],
+              color: scheme.surfaceContainerHighest.withValues(
+                alpha: scheme.brightness == Brightness.dark ? 0.24 : 0.34,
               ),
               borderRadius: BorderRadius.circular(22),
-              border: Border.all(
-                color: scheme.primary.withValues(alpha: 0.14),
-                width: 1.25,
-              ),
+              border: null,
               boxShadow: [
                 BoxShadow(
-                  color: scheme.primary.withValues(alpha: 0.08),
+                  color: scheme.shadow.withValues(alpha: 0.06),
                   blurRadius: 18,
-                  spreadRadius: -2,
-                  offset: const Offset(0, 6),
-                ),
-                BoxShadow(
-                  color: scheme.shadow.withValues(alpha: 0.04),
-                  blurRadius: 10,
-                  offset: const Offset(0, 3),
+                  spreadRadius: -6,
+                  offset: const Offset(0, 10),
                 ),
               ],
             ),
             child: Column(
               children: [
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(4, 2, 4, 12),
+                  padding: const EdgeInsets.fromLTRB(4, 0, 4, 10),
                   child: Row(
                     children: headers.asMap().entries.map(
                       (entry) {
-                        final idx = entry.key;
-                        final isFirst = idx == 0;
-                        final isLast = idx == headers.length - 1;
                         return Expanded(
                           child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 7),
-                            margin: EdgeInsets.only(
-                              left: isFirst ? 0 : 1.0,
-                              right: isLast ? 0 : 0,
-                            ),
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.vertical(
-                                top: const Radius.circular(10),
-                                bottom: const Radius.circular(6),
-                              ),
-                              gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  scheme.primary.withValues(alpha: 0.14),
-                                  scheme.primaryContainer
-                                      .withValues(alpha: 0.10),
-                                ],
-                              ),
-                              border: Border(
-                                bottom: BorderSide(
-                                  color: scheme.primary.withValues(alpha: 0.25),
-                                  width: 2,
-                                ),
-                              ),
-                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 6),
                             child: Center(
-                              child: Text(
+                              child: ScaleDownText(
                                 entry.value,
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w900,
-                                  color: scheme.primary.withValues(alpha: 0.92),
-                                  fontSize: 12.5,
-                                  letterSpacing: 0.4,
-                                  height: 1.15,
-                                ),
+                                textAlign: TextAlign.center,
+                                style:
+                                    Theme.of(context).textTheme.labelMedium?.copyWith(
+                                          fontWeight: FontWeight.w800,
+                                          color: scheme.onSurfaceVariant,
+                                          letterSpacing: 0.2,
+                                          height: 1.1,
+                                        ),
                               ),
                             ),
                           ),
@@ -1919,91 +1913,50 @@ class _HomeScreenState extends State<HomeScreen> {
                     ).toList(),
                   ),
                 ),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final gridLineColor =
-                        scheme.outlineVariant.withValues(alpha: 0.30);
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: gridLineColor,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      padding: const EdgeInsets.all(1.0),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(15),
-                        child: GridView.builder(
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 7,
-                            crossAxisSpacing: 1.0,
-                            mainAxisSpacing: 1.0,
-                            childAspectRatio: 1.0,
-                          ),
-                          itemCount: 42,
-                          itemBuilder: (context, index) {
-                            final dayNumber = index - startOffset + 1;
-                            if (dayNumber < 1 || dayNumber > daysInMonth) {
-                              return Container(
-                                color: scheme.surface.withValues(alpha: 0.78),
-                                child: Center(
-                                  child: Text(
-                                    '',
-                                    style: TextStyle(
-                                      color: scheme.onSurfaceVariant
-                                          .withValues(alpha: 0.28),
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                              );
-                            }
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: GridView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    padding: const EdgeInsets.all(6),
+                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                      crossAxisCount: 7,
+                      crossAxisSpacing: 8.0,
+                      mainAxisSpacing: 8.0,
+                      childAspectRatio: 0.95,
+                    ),
+                    itemCount: 42,
+                    itemBuilder: (context, index) {
+                      final dayNumber = index - startOffset + 1;
+                      if (dayNumber < 1 || dayNumber > daysInMonth) {
+                        return const SizedBox.shrink();
+                      }
 
-                            final date =
-                                DateTime(month.year, month.month, dayNumber);
-                            final isToday = DateUtils.isSameDay(date, now);
-                            final shiftWorking = _isWorkingDate(date);
-                            final holidays = _companyHolidaysForDate(date);
-                            final isWorking =
-                                holidays.isNotEmpty ? false : shiftWorking;
-                            final weekday = (date.weekday % 7);
-                            final isWeekend = weekday == 5 || weekday == 6;
+                      final date = DateTime(month.year, month.month, dayNumber);
+                      final isToday = DateUtils.isSameDay(date, now);
+                      final shiftWorking = _isWorkingDate(date);
+                      final holidays = _companyHolidaysForDate(date);
+                      final isWorking = holidays.isNotEmpty ? false : shiftWorking;
+                      final weekday = (date.weekday % 7);
+                      final isWeekend = weekday == 5 || weekday == 6;
 
-                            return _CalendarDayCell(
-                              dayNumber: dayNumber,
-                              date: date,
-                              isToday: isToday,
-                              isWorking: isWorking,
-                              isWeekend: isWeekend,
-                              onTap: () => _showCalendarDayDetails(
-                                lang: lang,
-                                date: date,
-                                isWorking: isWorking,
-                                holidays: holidays,
-                              ),
-                              workBg: workBg,
-                              offBg: offBg,
-                              unknownBg: unknownBg,
-                              workBorder: workBorder,
-                              offBorder: offBorder,
-                              unknownBorder: unknownBorder,
-                              successColor: semantic.success,
-                              errorColor: scheme.error,
-                              onSurface: scheme.onSurface,
-                              onSurfaceVariant: scheme.onSurfaceVariant,
-                              onPrimary: scheme.onPrimary,
-                              primaryColor: scheme.primary,
-                              primaryContainer: scheme.primaryContainer,
-                              outlineColor: scheme.outlineVariant,
-                              surfaceColor: scheme.surface,
-                            );
-                          },
+                      return _CalendarDayCell(
+                        dayNumber: dayNumber,
+                        date: date,
+                        isToday: isToday,
+                        isWorking: isWorking,
+                        isWeekend: isWeekend,
+                        onTap: () => _showCalendarDayDetails(
+                          lang: lang,
+                          date: date,
+                          isWorking: isWorking,
+                          holidays: holidays,
                         ),
-                      ),
-                    );
-                  },
+                        scheme: scheme,
+                        semantic: semantic,
+                      );
+                    },
+                  ),
                 ),
               ],
             ),
@@ -2289,14 +2242,14 @@ class _HomeScreenState extends State<HomeScreen> {
                 padding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                 decoration: BoxDecoration(
-                  color: scheme.tertiaryContainer.withValues(alpha: 0.55),
+                  color: scheme.tertiaryContainer,
                   borderRadius: BorderRadius.circular(12),
                   border: null,
                 ),
                 child: Icon(
                   Icons.assignment_rounded,
                   size: 20,
-                  color: scheme.tertiary,
+                  color: scheme.onSurface.withValues(alpha: 0.9),
                 ),
               ),
               const SizedBox(width: 12),
@@ -2457,8 +2410,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Copied from RequestsScreen
   void _showRequestDetails(request_models.EmployeeRequest request) async {
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+
     showDialog(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: false,
       builder: (context) => const Center(child: CircularProgressIndicator()),
     );
@@ -2468,11 +2424,25 @@ class _HomeScreenState extends State<HomeScreen> {
         widget.employeeData!.clientID,
         int.parse(request.id),
       );
-      Navigator.of(context).pop();
+      if (!mounted) {
+        if (rootNavigator.canPop()) {
+          rootNavigator.pop();
+        }
+        return;
+      }
+
+      rootNavigator.pop();
       final details = response['Success'] == true ? response['Data'] : null;
       _showRequestDetailsDialog(request, details);
     } catch (e) {
-      Navigator.of(context).pop();
+      if (!mounted) {
+        if (rootNavigator.canPop()) {
+          rootNavigator.pop();
+        }
+        return;
+      }
+
+      rootNavigator.pop();
       _showRequestDetailsDialog(request, null);
     }
   }
@@ -2776,6 +2746,25 @@ class _ActionCardWidgetState extends State<_ActionCardWidget> {
   bool _isHovered = false;
   bool _isPressed = false;
 
+  Color _iconBackgroundColor() {
+    final scheme = widget.scheme;
+    final semantic = widget.semantic;
+
+    if (widget.color == scheme.primary) return scheme.primaryContainer;
+    if (widget.color == scheme.secondary) return scheme.secondaryContainer;
+    if (widget.color == scheme.tertiary) return scheme.tertiaryContainer;
+
+    if (widget.color == semantic.success) return semantic.successContainer;
+    if (widget.color == semantic.warning) return semantic.warningContainer;
+    if (widget.color == semantic.info) return semantic.infoContainer;
+
+    return widget.color.withValues(alpha: scheme.brightness == Brightness.dark ? 0.22 : 0.14);
+  }
+
+  Color _iconForegroundColor() {
+    return widget.scheme.onSurface.withValues(alpha: 0.9);
+  }
+
   @override
   Widget build(BuildContext context) {
     final hoverT = _isHovered ? 1.0 : 0.0;
@@ -2783,6 +2772,8 @@ class _ActionCardWidgetState extends State<_ActionCardWidget> {
     final lift = _isPressed ? -1.0 : (-3.0 * hoverT);
     final base = widget.scheme.surface;
     final isRtl = Directionality.of(context) == ui.TextDirection.rtl;
+    final iconBg = _iconBackgroundColor();
+    final iconFg = _iconForegroundColor();
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
@@ -2839,29 +2830,34 @@ class _ActionCardWidgetState extends State<_ActionCardWidget> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: widget.color.withValues(
-                              alpha: 0.10 + 0.06 * hoverT,
-                            ),
+                            color: iconBg,
                             borderRadius: BorderRadius.circular(14),
+                            boxShadow: [
+                              BoxShadow(
+                                color: widget.scheme.shadow.withValues(
+                                  alpha: (widget.scheme.brightness == Brightness.dark ? 0.18 : 0.06) +
+                                      0.06 * hoverT,
+                                ),
+                                blurRadius: 10 + 6 * hoverT,
+                                offset: Offset(0, 5 + 1 * hoverT),
+                              ),
+                            ],
                           ),
                           child: Icon(
                             widget.icon,
-                            color: widget.color,
+                            color: iconFg,
                             size: 22,
                           ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(
+                          child: ScaleDownText(
                             widget.title,
                             style: Theme.of(context).textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   height: 1.15,
                                   color: widget.scheme.onSurface,
                                 ),
-                            textAlign: TextAlign.start,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         const SizedBox(width: 8),
@@ -2925,21 +2921,8 @@ class _CalendarDayCell extends StatefulWidget {
   final bool? isWorking;
   final bool isWeekend;
   final VoidCallback? onTap;
-  final Color workBg;
-  final Color offBg;
-  final Color unknownBg;
-  final Color workBorder;
-  final Color offBorder;
-  final Color unknownBorder;
-  final Color successColor;
-  final Color errorColor;
-  final Color onSurface;
-  final Color onSurfaceVariant;
-  final Color onPrimary;
-  final Color primaryColor;
-  final Color primaryContainer;
-  final Color outlineColor;
-  final Color surfaceColor;
+  final ColorScheme scheme;
+  final AppSemanticColors semantic;
 
   const _CalendarDayCell({
     required this.dayNumber,
@@ -2948,21 +2931,8 @@ class _CalendarDayCell extends StatefulWidget {
     required this.isWorking,
     required this.isWeekend,
     required this.onTap,
-    required this.workBg,
-    required this.offBg,
-    required this.unknownBg,
-    required this.workBorder,
-    required this.offBorder,
-    required this.unknownBorder,
-    required this.successColor,
-    required this.errorColor,
-    required this.onSurface,
-    required this.onSurfaceVariant,
-    required this.onPrimary,
-    required this.primaryColor,
-    required this.primaryContainer,
-    required this.outlineColor,
-    required this.surfaceColor,
+    required this.scheme,
+    required this.semantic,
   });
 
   @override
@@ -2976,125 +2946,81 @@ class _CalendarDayCellState extends State<_CalendarDayCell> {
   @override
   Widget build(BuildContext context) {
     final isWork = widget.isWorking;
-    final baseBg = isWork == null
-        ? widget.unknownBg
-        : (isWork ? widget.workBg : widget.offBg);
-    final baseBorderColor = isWork == null
-        ? widget.unknownBorder
-        : (isWork ? widget.workBorder : widget.offBorder);
-    final baseFg = isWork == null
-        ? widget.onSurfaceVariant.withValues(alpha: 0.92)
-        : (isWork
-            ? widget.successColor.withValues(alpha: 0.96)
-            : widget.errorColor.withValues(alpha: 0.96));
+    final baseText = widget.scheme.onSurface;
+    final weekendText = widget.scheme.onSurfaceVariant.withValues(alpha: 0.78);
+    final todayText = widget.scheme.onPrimary;
 
-    final pressScale = _isPressed ? 0.94 : (_isHovered ? 1.03 : 1.0);
+    final Color dotColor = widget.isToday
+        ? widget.scheme.onPrimary.withValues(alpha: 0.92)
+        : isWork == null
+            ? widget.scheme.outlineVariant.withValues(alpha: 0.85)
+            : (isWork
+                ? widget.semantic.success.withValues(alpha: 0.95)
+                : widget.scheme.error.withValues(alpha: 0.95));
+
+    final pressScale = _isPressed ? 0.97 : 1.0;
 
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
-      child: GestureDetector(
-        onTap: widget.onTap,
-        onTapDown: (_) => setState(() => _isPressed = true),
-        onTapUp: (_) => setState(() => _isPressed = false),
-        onTapCancel: () => setState(() => _isPressed = false),
-        child: Semantics(
-          label: 'يوم ${widget.dayNumber}',
-          button: true,
-          enabled: true,
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 230),
-            curve: Curves.easeOutCubic,
-            decoration: widget.isToday
-                ? BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: _isPressed
-                          ? [
-                              widget.primaryColor.withValues(alpha: 0.95),
-                              widget.primaryColor,
-                            ]
-                          : _isHovered
-                              ? [
-                                  widget.primaryColor.withValues(alpha: 0.90),
-                                  widget.primaryColor.withValues(alpha: 0.82),
-                                ]
-                              : [
-                                  widget.primaryColor.withValues(alpha: 0.88),
-                                  widget.primaryColor.withValues(alpha: 0.76),
-                                ],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: widget.onPrimary.withValues(alpha: 0.35),
-                      width: 2.2,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: widget.primaryColor
-                            .withValues(alpha: _isPressed ? 0.42 : 0.28),
-                        blurRadius: _isPressed ? 18 : 12,
-                        spreadRadius: _isPressed ? 1.5 : 0.5,
-                        offset: Offset(0, _isPressed ? 4 : 3),
-                      ),
-                    ],
-                  )
-                : BoxDecoration(
-                    color: _isPressed
-                        ? baseBg.withValues(
-                            alpha: (baseBg.a + 0.18).clamp(0.0, 1.0))
-                        : _isHovered
-                            ? baseBg.withValues(
-                                alpha: (baseBg.a + 0.10).clamp(0.0, 1.0))
-                            : baseBg,
-                    borderRadius: BorderRadius.circular(9),
-                    border: Border.all(
-                      color: _isHovered
-                          ? widget.primaryColor.withValues(alpha: 0.55)
-                          : _isPressed
-                              ? widget.primaryColor.withValues(alpha: 0.72)
-                              : baseBorderColor,
-                      width: _isHovered || _isPressed ? 1.4 : 1.1,
-                    ),
-                    boxShadow: [
-                      if (_isHovered || _isPressed)
-                        BoxShadow(
-                          color: (_isPressed
-                                  ? widget.primaryColor
-                                  : widget.outlineColor)
-                              .withValues(alpha: _isPressed ? 0.22 : 0.13),
-                          blurRadius: _isPressed ? 10 : 6,
-                          spreadRadius: _isPressed ? 0.8 : 0,
-                          offset: const Offset(0, 2),
+      child: Semantics(
+        label: 'يوم ${widget.dayNumber}',
+        button: true,
+        enabled: true,
+        child: AnimatedScale(
+          duration: const Duration(milliseconds: 140),
+          curve: Curves.easeOut,
+          scale: pressScale,
+          child: Material(
+            color: widget.isToday
+                ? widget.scheme.primary
+                : (_isHovered
+                    ? widget.scheme.surface.withValues(
+                        alpha: widget.scheme.brightness == Brightness.dark
+                            ? 0.18
+                            : 0.55,
+                      )
+                    : Colors.transparent),
+            borderRadius: BorderRadius.circular(14),
+            child: InkWell(
+              onTap: widget.onTap,
+              borderRadius: BorderRadius.circular(14),
+              onTapDown: (_) => setState(() => _isPressed = true),
+              onTapUp: (_) => setState(() => _isPressed = false),
+              onTapCancel: () => setState(() => _isPressed = false),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+                child: Center(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          widget.dayNumber.toString(),
+                          style: TextStyle(
+                            fontWeight:
+                                widget.isToday ? FontWeight.w900 : FontWeight.w800,
+                            color: widget.isToday
+                                ? todayText
+                                : (widget.isWeekend ? weekendText : baseText),
+                            fontSize: widget.isToday ? 15.5 : 14.5,
+                            height: 1.0,
+                          ),
                         ),
-                    ],
+                        const SizedBox(height: 3),
+                        Container(
+                          width: 6,
+                          height: 6,
+                          decoration: BoxDecoration(
+                            color: dotColor,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-            transform: Matrix4.diagonal3Values(
-              pressScale,
-              pressScale,
-              1.0,
-            ),
-            child: Center(
-              child: AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                curve: Curves.easeOut,
-                style: TextStyle(
-                  fontWeight: widget.isToday
-                      ? FontWeight.w900
-                      : (_isHovered ? FontWeight.w900 : FontWeight.w800),
-                  color: widget.isToday
-                      ? widget.onPrimary
-                      : (_isHovered
-                          ? (isWork == null
-                              ? widget.onSurface
-                              : baseFg.withValues(alpha: 1.0))
-                          : baseFg),
-                  fontSize: widget.isToday ? 16.0 : (_isHovered ? 15.0 : 14.5),
-                  letterSpacing: widget.isToday ? 0.3 : 0.2,
-                  height: 1.1,
                 ),
-                child: Text(widget.dayNumber.toString()),
               ),
             ),
           ),
@@ -3129,7 +3055,27 @@ class _KpiTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    final bg = toneColor.withValues(alpha: 0.10);
+    final semantic = Theme.of(context).extension<AppSemanticColors>()!;
+
+    Color iconBg;
+    if (toneColor == scheme.primary) {
+      iconBg = scheme.primaryContainer;
+    } else if (toneColor == scheme.secondary) {
+      iconBg = scheme.secondaryContainer;
+    } else if (toneColor == scheme.tertiary) {
+      iconBg = scheme.tertiaryContainer;
+    } else if (toneColor == semantic.success) {
+      iconBg = semantic.successContainer;
+    } else if (toneColor == semantic.warning) {
+      iconBg = semantic.warningContainer;
+    } else if (toneColor == semantic.info) {
+      iconBg = semantic.infoContainer;
+    } else {
+      iconBg = toneColor.withValues(alpha: scheme.brightness == Brightness.dark ? 0.22 : 0.14);
+    }
+
+    final bg = iconBg.withValues(alpha: scheme.brightness == Brightness.dark ? 0.18 : 0.22);
+    final iconFg = scheme.onSurface.withValues(alpha: 0.9);
 
     return ConstrainedBox(
       constraints: const BoxConstraints(minWidth: 132, maxWidth: 160),
@@ -3151,10 +3097,10 @@ class _KpiTile extends StatelessWidget {
                   width: 36,
                   height: 36,
                   decoration: BoxDecoration(
-                    color: toneColor.withValues(alpha: 0.16),
+                    color: iconBg,
                     borderRadius: BorderRadius.circular(14),
                   ),
-                  child: Icon(icon, color: toneColor, size: 20),
+                  child: Icon(icon, color: iconFg, size: 20),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
@@ -3171,10 +3117,8 @@ class _KpiTile extends StatelessWidget {
                             ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
+                      ScaleDownText(
                         label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               fontWeight: FontWeight.w700,
                               color: scheme.onSurfaceVariant,
