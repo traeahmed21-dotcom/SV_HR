@@ -660,6 +660,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
     // إظهار dialog للتأكيد
     final confirmed = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: Text(Translations.getText('confirm_approval', lang)),
         content: Column(
@@ -712,21 +713,38 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
     if (confirmed != true) return;
 
     // إظهار loading dialog
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+    bool loadingVisible = false;
+
+    void closeLoadingIfVisible() {
+      if (!mounted) return;
+      if (!loadingVisible) return;
+      if (rootNavigator.canPop()) {
+        rootNavigator.pop();
+      }
+      loadingVisible = false;
+    }
+
     showDialog(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: Row(
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(width: 16),
-              Text(Translations.getText('approving_request', lang)),
-            ],
+      builder: (BuildContext dialogContext) {
+        return PopScope(
+          canPop: false,
+          child: AlertDialog(
+            content: Row(
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(width: 16),
+                Text(Translations.getText('approving_request', lang)),
+              ],
+            ),
           ),
         );
       },
     );
+    loadingVisible = true;
 
     try {
       print('🚀 بدء عملية الموافقة على الطلب...');
@@ -751,7 +769,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       print('📡 استجابة الموافقة على الطلب: $response');
 
       // إغلاق loading dialog
-      Navigator.of(context).pop();
+      closeLoadingIfVisible();
 
       if (response['Success'] == true) {
         // إزالة الطلب من القائمة
@@ -776,6 +794,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
         if (mounted) {
           await showDialog(
             context: context,
+            useRootNavigator: true,
             builder: (context) => AlertDialog(
               title: Text(Translations.getText('cannot_approve_now', lang)),
               content: Text(formatted),
@@ -791,11 +810,12 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       }
     } catch (e) {
       // إغلاق loading dialog
-      Navigator.of(context).pop();
+      closeLoadingIfVisible();
 
       if (mounted) {
         await showDialog(
           context: context,
+          useRootNavigator: true,
           builder: (context) => AlertDialog(
             title: Text(Translations.getText('cannot_approve_now', lang)),
             content: Text(_formatApprovalErrorMessage(e.toString())),
@@ -821,6 +841,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
     // إظهار dialog للتأكيد أولاً
     final confirmed = await showDialog<bool>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: Text(Translations.getText('confirm_rejection', lang)),
         content: Column(
@@ -877,6 +898,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
 
     final rejectionReason = await showDialog<String>(
       context: context,
+      useRootNavigator: true,
       builder: (context) => AlertDialog(
         title: Text(Translations.getText('rejection_reason', lang)),
         content: Column(
@@ -941,21 +963,38 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
     if (rejectionReason == null || rejectionReason.isEmpty) return;
 
     // إظهار loading dialog
+    final rootNavigator = Navigator.of(context, rootNavigator: true);
+    bool loadingVisible = false;
+
+    void closeLoadingIfVisible() {
+      if (!mounted) return;
+      if (!loadingVisible) return;
+      if (rootNavigator.canPop()) {
+        rootNavigator.pop();
+      }
+      loadingVisible = false;
+    }
+
     showDialog(
       context: context,
+      useRootNavigator: true,
       barrierDismissible: false,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          content: Row(
-            children: [
-              const CircularProgressIndicator(),
-              const SizedBox(width: 16),
-              Text(Translations.getText('approving_request', lang)),
-            ],
+      builder: (BuildContext dialogContext) {
+        return PopScope(
+          canPop: false,
+          child: AlertDialog(
+            content: Row(
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(width: 16),
+                Text(Translations.getText('approving_request', lang)),
+              ],
+            ),
           ),
         );
       },
     );
+    loadingVisible = true;
 
     try {
       print('🚀 بدء عملية رفض الطلب...');
@@ -981,7 +1020,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       print('📡 استجابة رفض الطلب: $response');
 
       // إغلاق loading dialog
-      Navigator.of(context).pop();
+      closeLoadingIfVisible();
 
       if (response['Success'] == true) {
         // إزالة الطلب من القائمة
@@ -1006,6 +1045,7 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
         if (mounted) {
           await showDialog(
             context: context,
+            useRootNavigator: true,
             builder: (context) => AlertDialog(
               title: Text(Translations.getText('cannot_reject_now', lang)),
               content: Text(formatted),
@@ -1021,11 +1061,12 @@ class _ApprovalsScreenState extends State<ApprovalsScreen> {
       }
     } catch (e) {
       // إغلاق loading dialog
-      Navigator.of(context).pop();
+      closeLoadingIfVisible();
 
       if (mounted) {
         await showDialog(
           context: context,
+          useRootNavigator: true,
           builder: (context) => AlertDialog(
             title: Text(Translations.getText('cannot_reject_now', lang)),
             content: Text(_formatApprovalErrorMessage(e.toString())),
