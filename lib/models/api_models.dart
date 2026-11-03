@@ -65,6 +65,8 @@ class EmployeeData {
   final int clientID;
   final String databaseName;
   final String clientName;
+  final String? clientUserType;
+  final bool isMainClientContact;
   final SecureApprovalPermission? embeddedApprovalPermission;
   final String? secureApprovalToken;
 
@@ -77,9 +79,16 @@ class EmployeeData {
     required this.clientID,
     required this.databaseName,
     required this.clientName,
+    this.clientUserType,
+    required this.isMainClientContact,
     this.embeddedApprovalPermission,
     this.secureApprovalToken,
   });
+
+  bool get isMainClientUser =>
+      (clientUserType ?? '').toLowerCase().trim() == 'main';
+
+  bool get canManageUsers => isMainClientContact;
 
   bool get hasValidSecureApprovalPermission {
     final perm = embeddedApprovalPermission;
@@ -124,6 +133,10 @@ class EmployeeData {
       clientID: json['clientID'] ?? 0,
       databaseName: json['databaseName'] ?? '',
       clientName: json['clientName'] ?? '',
+      clientUserType: json['clientUserType']?.toString(),
+      isMainClientContact: json['isMainClientContact'] == true ||
+          (json['isMainClientContact'] is String &&
+              json['isMainClientContact'].toString().toLowerCase() == 'true'),
       embeddedApprovalPermission: embeddedPerm,
       secureApprovalToken: secureToken,
     );
@@ -139,7 +152,11 @@ class EmployeeData {
       'clientID': clientID,
       'databaseName': databaseName,
       'clientName': clientName,
+      'isMainClientContact': isMainClientContact,
     };
+    if (clientUserType != null && clientUserType!.trim().isNotEmpty) {
+      map['clientUserType'] = clientUserType;
+    }
     if (secureApprovalToken != null && secureApprovalToken!.isNotEmpty) {
       map['approvalPermissionToken'] = secureApprovalToken;
     }

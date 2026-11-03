@@ -91,8 +91,6 @@ class _SalaryDetailsScreenState extends State<SalaryDetailsScreen> {
       appBar: AppBar(
         title: Text(Translations.getText('salary_details_title', lang)),
         elevation: 0,
-        backgroundColor: const Color(0xFF0EA5E9),
-        foregroundColor: Colors.white,
       ),
       body: Column(
         children: [
@@ -106,10 +104,11 @@ class _SalaryDetailsScreenState extends State<SalaryDetailsScreen> {
   }
 
   Widget _buildMonthYearPicker(String lang) {
+    final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: const BoxDecoration(
-        color: Color(0xFF0EA5E9),
+      decoration: BoxDecoration(
+        color: scheme.primary,
         borderRadius: BorderRadius.only(
           bottomLeft: Radius.circular(24),
           bottomRight: Radius.circular(24),
@@ -170,18 +169,19 @@ class _SalaryDetailsScreenState extends State<SalaryDetailsScreen> {
     required List<DropdownMenuItem<int>> items,
     required ValueChanged<int?> onChanged,
   }) {
+    final scheme = Theme.of(context).colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           label,
-          style: const TextStyle(color: Colors.white70, fontSize: 12),
+          style: TextStyle(color: scheme.onPrimary.withOpacity(0.75), fontSize: 12),
         ),
         const SizedBox(height: 4),
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 12),
           decoration: BoxDecoration(
-            color: Colors.white24,
+            color: scheme.onPrimary.withOpacity(0.16),
             borderRadius: BorderRadius.circular(12),
           ),
           child: DropdownButtonHideUnderline(
@@ -189,9 +189,9 @@ class _SalaryDetailsScreenState extends State<SalaryDetailsScreen> {
               value: value,
               items: items,
               onChanged: onChanged,
-              dropdownColor: const Color(0xFF0EA5E9),
-              style: const TextStyle(color: Colors.white),
-              icon: const Icon(Icons.arrow_drop_down, color: Colors.white),
+              dropdownColor: scheme.primary,
+              style: TextStyle(color: scheme.onPrimary),
+              icon: Icon(Icons.arrow_drop_down, color: scheme.onPrimary),
               isExpanded: true,
             ),
           ),
@@ -223,8 +223,8 @@ class _SalaryDetailsScreenState extends State<SalaryDetailsScreen> {
               ElevatedButton(
                 onPressed: _fetchData,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF0EA5E9),
-                  foregroundColor: Colors.white,
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
                 ),
                 child: Text(Translations.getText('retry', lang)),
               ),
@@ -260,7 +260,7 @@ class _SalaryDetailsScreenState extends State<SalaryDetailsScreen> {
           _buildInfoItem(
             Translations.getText('basic_salary', lang),
             _salaryDetails!.basicSalary,
-            Colors.blueGrey,
+            theme.colorScheme.secondary,
             Icons.account_balance_wallet,
             lang,
           ),
@@ -285,16 +285,17 @@ class _SalaryDetailsScreenState extends State<SalaryDetailsScreen> {
   }
 
   Widget _buildSummaryCard(String lang, ThemeData theme) {
+    final scheme = theme.colorScheme;
     return Card(
       elevation: 8,
-      shadowColor: const Color(0xFF0EA5E9).withOpacity(0.3),
+      shadowColor: scheme.primary.withOpacity(0.25),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
-          gradient: const LinearGradient(
-            colors: [Color(0xFF0EA5E9), Color(0xFF2563EB)],
+          gradient: LinearGradient(
+            colors: [scheme.primary, scheme.secondary],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -304,8 +305,8 @@ class _SalaryDetailsScreenState extends State<SalaryDetailsScreen> {
             Text(
               Translations.getText('net_salary', lang),
               style: const TextStyle(
-                color: Colors.white, // Changed from white70
-                fontSize: 18, // Increased size
+                color: Colors.white,
+                fontSize: 18,
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -313,9 +314,9 @@ class _SalaryDetailsScreenState extends State<SalaryDetailsScreen> {
             Text(
               '${_salaryDetails!.netSalary.toStringAsFixed(2)} ${Translations.getText('currency_sar', lang)}',
               style: const TextStyle(
-                color: Colors.white, // Keep white but make it pop
-                fontSize: 42, // Increased size from 36
-                fontWeight: FontWeight.w900, // Thicker weight
+                color: Colors.white,
+                fontSize: 42,
+                fontWeight: FontWeight.w900,
                 letterSpacing: 1.2,
                 shadows: [
                   Shadow(
@@ -333,14 +334,14 @@ class _SalaryDetailsScreenState extends State<SalaryDetailsScreen> {
                 _buildSummaryItem(
                   Translations.getText('total_additions', lang),
                   _salaryDetails!.totalAdditions,
-                  const Color(0xFF22C55E), // More vibrant Emerald Green
+                  const Color(0xFF22C55E),
                   lang,
                 ),
                 Container(width: 1, height: 40, color: Colors.white24),
                 _buildSummaryItem(
                   Translations.getText('total_deductions', lang),
                   _salaryDetails!.totalDeductions,
-                  const Color(0xFFFF3B3B), // Brighter Vivid Red
+                  const Color(0xFFFF3B3B),
                   lang,
                 ),
               ],
@@ -419,6 +420,7 @@ class _SalaryDetailsScreenState extends State<SalaryDetailsScreen> {
   }) {
     if (items.isEmpty) return const SizedBox.shrink();
 
+    final scheme = themeData.colorScheme;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -444,16 +446,17 @@ class _SalaryDetailsScreenState extends State<SalaryDetailsScreen> {
         ),
         Card(
           elevation: 0,
-          color: themeData.brightness == Brightness.dark ? Colors.grey[900] : Colors.grey[50],
+          color: scheme.surfaceContainerLow,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
-            side: BorderSide(color: Colors.grey.withOpacity(0.2)),
+            side: BorderSide(color: scheme.outlineVariant.withOpacity(0.6)),
           ),
           child: ListView.separated(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: items.length,
-            separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey.withOpacity(0.1)),
+            separatorBuilder: (context, index) =>
+                Divider(height: 1, color: scheme.outlineVariant.withOpacity(0.4)),
             itemBuilder: (context, index) {
               final item = items[index];
               return ListTile(

@@ -2132,6 +2132,110 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> getEmployeeMobileDevices(
+    int clientId, {
+    String? search,
+    bool? activeOnly,
+    int page = 1,
+    int pageSize = 50,
+  }) async {
+    try {
+      final qp = <String, String>{
+        'page': page.toString(),
+        'pageSize': pageSize.toString(),
+      };
+      if (search != null && search.trim().isNotEmpty) {
+        qp['search'] = search.trim();
+      }
+      if (activeOnly != null) {
+        qp['activeOnly'] = activeOnly ? 'true' : 'false';
+      }
+
+      final uri = Uri.parse(
+              '${ApiConfig.baseUrl}/api/$clientId/employee-mobile-devices')
+          .replace(queryParameters: qp);
+      _log('🚀 جلب أجهزة الموظفين...');
+      _log('🔗 URL: $uri');
+
+      final response = await http
+          .get(
+            uri,
+            headers: ApiConfig.headers,
+          )
+          .timeout(const Duration(seconds: 25));
+
+      _log('📡 Response Status Code: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        return {'Success': false, 'Message': 'فشل في تحميل الأجهزة', 'Data': []};
+      }
+
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded;
+      }
+      return {'Success': false, 'Message': 'استجابة غير متوقعة', 'Data': []};
+    } catch (e) {
+      _log('💥 خطأ في getEmployeeMobileDevices: $e');
+      return {'Success': false, 'Message': 'خطأ في الاتصال', 'Data': []};
+    }
+  }
+
+  static Future<bool> setEmployeeMobileDeviceActive(
+    int clientId, {
+    required int employeeId,
+    required String macAddress,
+    required bool isActive,
+  }) async {
+    try {
+      final uri = Uri.parse(
+          '${ApiConfig.baseUrl}/api/$clientId/employee-mobile-devices/set-active');
+      final body = {
+        'EmployeeId': employeeId,
+        'MacAddress': macAddress,
+        'IsActive': isActive,
+      };
+      final response = await http
+          .post(uri, headers: ApiConfig.headers, body: json.encode(body))
+          .timeout(const Duration(seconds: 25));
+      if (response.statusCode != 200) return false;
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded['Success'] == true;
+      }
+      return false;
+    } catch (e) {
+      _log('💥 خطأ في setEmployeeMobileDeviceActive: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> deleteEmployeeMobileDevice(
+    int clientId, {
+    required int employeeId,
+    required String macAddress,
+  }) async {
+    try {
+      final uri = Uri.parse(
+          '${ApiConfig.baseUrl}/api/$clientId/employee-mobile-devices/delete');
+      final body = {
+        'EmployeeId': employeeId,
+        'MacAddress': macAddress,
+      };
+      final response = await http
+          .post(uri, headers: ApiConfig.headers, body: json.encode(body))
+          .timeout(const Duration(seconds: 25));
+      if (response.statusCode != 200) return false;
+      final decoded = json.decode(response.body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded['Success'] == true;
+      }
+      return false;
+    } catch (e) {
+      _log('💥 خطأ في deleteEmployeeMobileDevice: $e');
+      return false;
+    }
+  }
+
   // تغيير كلمة المرور
   Future<Map<String, dynamic>> changePassword({
     required int clientId,
@@ -3564,6 +3668,369 @@ class ApiService {
         'Success': false,
         'Message': 'خطأ في الاتصال: $e',
         'Data': [],
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> searchAttendanceReportEmployees(
+    int clientId, {
+    String? query,
+    int? branchId,
+    int page = 1,
+    int pageSize = 30,
+  }) async {
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/$clientId/attendance-reports/employees')
+          .replace(queryParameters: {
+        if (query != null && query.trim().isNotEmpty) 'q': query.trim(),
+        if (branchId != null && branchId > 0) 'branchId': branchId.toString(),
+        'page': page.toString(),
+        'pageSize': pageSize.toString(),
+      });
+
+      final response = await http.get(
+        uri,
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        return {
+          'Success': decoded['Success'] == true,
+          'Message': decoded['Message']?.toString(),
+          'Data': decoded['Data'] ?? [],
+          'TotalCount': decoded['TotalCount'] ?? 0,
+        };
+      }
+
+      if (response.statusCode == 404) {
+        try {
+          final legacyUri = Uri.parse('${ApiConfig.baseUrl}/api/$clientId/requests/employees');
+          final legacyResp = await http.get(
+            legacyUri,
+            headers: {'Accept': 'application/json'},
+          ).timeout(const Duration(seconds: 30));
+
+          if (legacyResp.statusCode == 200) {
+            final legacyDecoded = json.decode(legacyResp.body);
+            if (legacyDecoded is Map && legacyDecoded['Success'] == true) {
+              final raw = legacyDecoded['Data'] as List?;
+              var items = (raw ?? [])
+                  .whereType<Map>()
+                  .map((e) => Map<String, dynamic>.from(e))
+                  .map((e) {
+                final id = e['Value'];
+                final name = (e['Text'] ?? '').toString();
+                return {
+                  'EmployeeId': id is int ? id : int.tryParse(id?.toString() ?? ''),
+                  'EmployeeNumber': '',
+                  'EmployeeName': name,
+                };
+              }).where((e) => e['EmployeeId'] != null).toList();
+
+              final q = (query ?? '').trim().toLowerCase();
+              if (q.isNotEmpty) {
+                items = items.where((e) {
+                  final name = (e['EmployeeName'] ?? '').toString().toLowerCase();
+                  final idStr = (e['EmployeeId'] ?? '').toString().toLowerCase();
+                  return name.contains(q) || idStr.contains(q);
+                }).toList();
+              }
+
+              final total = items.length;
+              final start = ((page < 1 ? 1 : page) - 1) * pageSize;
+              final end = (start + pageSize) > total ? total : (start + pageSize);
+              final paged = (start >= total || start < 0)
+                  ? <Map<String, dynamic>>[]
+                  : items.sublist(start, end);
+
+              return {
+                'Success': true,
+                'Message': null,
+                'Data': paged,
+                'TotalCount': total,
+              };
+            }
+          }
+        } catch (_) {}
+
+        return {
+          'Success': false,
+          'Message':
+              'مسار جلب الموظفين غير موجود (404).\nتأكد من نشر/تحديث الـ API.\nالرابط: $uri',
+          'Data': [],
+          'TotalCount': 0,
+        };
+      }
+
+      return {
+        'Success': false,
+        'Message': 'فشل في جلب الموظفين: ${response.statusCode}',
+        'Data': [],
+        'TotalCount': 0,
+      };
+    } catch (e) {
+      return {
+        'Success': false,
+        'Message': 'خطأ في الاتصال: $e',
+        'Data': [],
+        'TotalCount': 0,
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAttendanceReportShifts(int clientId) async {
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/$clientId/attendance-reports/shifts');
+      final response = await http.get(
+        uri,
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        return {
+          'Success': decoded['Success'] == true,
+          'Message': decoded['Message']?.toString(),
+          'Data': decoded['Data'] ?? [],
+        };
+      }
+
+      if (response.statusCode == 404) {
+        return {
+          'Success': false,
+          'Message':
+              'مسار جلب الورديات غير موجود (404).\nتأكد من نشر/تحديث الـ API.\nالرابط: $uri',
+          'Data': [],
+        };
+      }
+
+      return {
+        'Success': false,
+        'Message': 'فشل في جلب الورديات: ${response.statusCode}',
+        'Data': [],
+      };
+    } catch (e) {
+      return {
+        'Success': false,
+        'Message': 'خطأ في الاتصال: $e',
+        'Data': [],
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAttendanceReportBranches(int clientId) async {
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/$clientId/attendance-reports/branches');
+      final response = await http.get(
+        uri,
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        return {
+          'Success': decoded['Success'] == true,
+          'Message': decoded['Message']?.toString(),
+          'Data': decoded['Data'] ?? [],
+        };
+      }
+
+      if (response.statusCode == 404) {
+        return {
+          'Success': false,
+          'Message':
+              'مسار جلب الفروع غير موجود (404).\nتأكد من نشر/تحديث الـ API.\nالرابط: $uri',
+          'Data': [],
+        };
+      }
+
+      return {
+        'Success': false,
+        'Message': 'فشل في جلب الفروع: ${response.statusCode}',
+        'Data': [],
+      };
+    } catch (e) {
+      return {
+        'Success': false,
+        'Message': 'خطأ في الاتصال: $e',
+        'Data': [],
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> generateAttendanceReport(
+    int clientId, {
+    required DateTime fromDate,
+    required DateTime toDate,
+    int? employeeId,
+    int? branchId,
+    int? shiftId,
+    String? status,
+    String calculationMethod = 'ByPeriod',
+  }) async {
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/$clientId/attendance-reports/details');
+      final payload = <String, dynamic>{
+        'FromDate':
+            '${fromDate.year.toString().padLeft(4, '0')}-${fromDate.month.toString().padLeft(2, '0')}-${fromDate.day.toString().padLeft(2, '0')}',
+        'ToDate':
+            '${toDate.year.toString().padLeft(4, '0')}-${toDate.month.toString().padLeft(2, '0')}-${toDate.day.toString().padLeft(2, '0')}',
+        if (employeeId != null) 'EmployeeId': employeeId,
+        if (branchId != null) 'BranchId': branchId,
+        if (shiftId != null) 'ShiftId': shiftId,
+        if (status != null && status.trim().isNotEmpty) 'Status': status.trim(),
+        'CalculationMethod': calculationMethod,
+      };
+
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: json.encode(payload),
+          )
+          .timeout(const Duration(seconds: 60));
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        return {
+          'Success': decoded['Success'] == true,
+          'Message': decoded['Message']?.toString(),
+          'Data': decoded['Data'] ?? [],
+          'Method': decoded['Method'],
+        };
+      }
+
+      if (response.statusCode == 404) {
+        return {
+          'Success': false,
+          'Message':
+              'مسار تقرير الحضور التفصيلي غير موجود (404).\nتأكد من نشر/تحديث الـ API.\nالرابط: $uri',
+          'Data': [],
+          'Method': null,
+        };
+      }
+
+      return {
+        'Success': false,
+        'Message': 'فشل في إنشاء التقرير: ${response.statusCode}',
+        'Data': [],
+        'Method': null,
+      };
+    } catch (e) {
+      return {
+        'Success': false,
+        'Message': 'خطأ في الاتصال: $e',
+        'Data': [],
+        'Method': null,
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> getAttendanceProcessingDepartments(int clientId) async {
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/$clientId/attendance-processing/departments');
+      final response = await http.get(
+        uri,
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        return {
+          'Success': decoded['Success'] == true,
+          'Message': decoded['Message']?.toString(),
+          'Data': decoded['Data'] ?? [],
+        };
+      }
+
+      if (response.statusCode == 404) {
+        return {
+          'Success': false,
+          'Message':
+              'مسار جلب الأقسام غير موجود (404).\nتأكد من نشر/تحديث الـ API.\nالرابط: $uri',
+          'Data': [],
+        };
+      }
+
+      return {
+        'Success': false,
+        'Message': 'فشل في جلب الأقسام: ${response.statusCode}',
+        'Data': [],
+      };
+    } catch (e) {
+      return {
+        'Success': false,
+        'Message': 'خطأ في الاتصال: $e',
+        'Data': [],
+      };
+    }
+  }
+
+  static Future<Map<String, dynamic>> previewAttendanceProcessing(
+    int clientId, {
+    required DateTime fromDate,
+    required DateTime toDate,
+    int? departmentId,
+    String calculationMethod = 'ByPeriod',
+  }) async {
+    try {
+      final uri = Uri.parse('${ApiConfig.baseUrl}/api/$clientId/attendance-processing/preview');
+      final payload = <String, dynamic>{
+        'FromDate':
+            '${fromDate.year.toString().padLeft(4, '0')}-${fromDate.month.toString().padLeft(2, '0')}-${fromDate.day.toString().padLeft(2, '0')}',
+        'ToDate':
+            '${toDate.year.toString().padLeft(4, '0')}-${toDate.month.toString().padLeft(2, '0')}-${toDate.day.toString().padLeft(2, '0')}',
+        if (departmentId != null) 'DepartmentId': departmentId,
+        'CalculationMethod': calculationMethod,
+      };
+
+      final response = await http
+          .post(
+            uri,
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+            },
+            body: json.encode(payload),
+          )
+          .timeout(const Duration(seconds: 90));
+
+      if (response.statusCode == 200) {
+        final decoded = json.decode(response.body);
+        return {
+          'Success': decoded['Success'] == true,
+          'Message': decoded['Message']?.toString(),
+          'Data': decoded['Data'] ?? [],
+          'Method': decoded['Method'],
+        };
+      }
+
+      if (response.statusCode == 404) {
+        return {
+          'Success': false,
+          'Message':
+              'مسار معالجة الحضور غير موجود (404).\nتأكد من نشر/تحديث الـ API.\nالرابط: $uri',
+          'Data': [],
+          'Method': null,
+        };
+      }
+
+      return {
+        'Success': false,
+        'Message': 'فشل في معالجة البيانات: ${response.statusCode}',
+        'Data': [],
+        'Method': null,
+      };
+    } catch (e) {
+      return {
+        'Success': false,
+        'Message': 'خطأ في الاتصال: $e',
+        'Data': [],
+        'Method': null,
       };
     }
   }

@@ -15,6 +15,9 @@ import 'user_tasks_screen.dart';
 import 'walkie_talkie_screen.dart';
 import 'attendance_history_screen.dart';
 import 'shift_info_screen.dart';
+import 'employee_mobile_devices_screen.dart';
+import 'attendance_reports_screen.dart';
+import 'attendance_processing_screen.dart';
 
 class MoreScreen extends StatelessWidget {
   final String employeeNumber;
@@ -42,6 +45,7 @@ class MoreScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final isRTL = context.watch<LanguageService>().isArabic;
+    final canManageEmployeeDevices = employeeData.canManageUsers;
 
     return Directionality(
       textDirection: isRTL ? TextDirection.rtl : TextDirection.ltr,
@@ -91,7 +95,9 @@ class MoreScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            if (employeeData.isApprover || hasTaskCreatorAccess) ...[
+            if (employeeData.isApprover ||
+                hasTaskCreatorAccess ||
+                canManageEmployeeDevices) ...[
               _Section(
                 title: _t(context, 'admin_section_title'),
                 children: [
@@ -109,6 +115,57 @@ class MoreScreen extends StatelessWidget {
                             builder: (_) => ApprovalsScreen(
                               employeeId: employeeNumber,
                               employeeData: employeeData,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  if (canManageEmployeeDevices)
+                    _MenuTile(
+                      title: _t(context, 'employee_mobile_devices_title'),
+                      icon: Icons.phonelink_setup_rounded,
+                      leadingBg: scheme.secondaryContainer,
+                      leadingFg: scheme.onSecondaryContainer,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => EmployeeMobileDevicesScreen(
+                              clientId: employeeData.clientID,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  if (canManageEmployeeDevices)
+                    _MenuTile(
+                      title: _t(context, 'attendance_reports_title'),
+                      icon: Icons.bar_chart_rounded,
+                      leadingBg: scheme.secondaryContainer,
+                      leadingFg: scheme.onSecondaryContainer,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AttendanceReportsScreen(
+                              clientId: employeeData.clientID,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  if (canManageEmployeeDevices)
+                    _MenuTile(
+                      title: _t(context, 'attendance_processing_title'),
+                      icon: Icons.auto_fix_high_rounded,
+                      leadingBg: scheme.secondaryContainer,
+                      leadingFg: scheme.onSecondaryContainer,
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AttendanceProcessingScreen(
+                              clientId: employeeData.clientID,
                             ),
                           ),
                         );

@@ -1729,6 +1729,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
   Widget build(BuildContext context) {
     final languageService = Provider.of<LanguageService>(context);
     final lang = languageService.currentLocale.languageCode;
+    final scheme = Theme.of(context).colorScheme;
 
     return Scaffold(
       body: Container(
@@ -1751,13 +1752,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                 padding:
                     const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: widget.isCheckIn
-                        ? [Colors.green.shade600, Colors.green.shade800]
-                        : [Colors.red.shade600, Colors.red.shade800],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  color: scheme.primary,
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withOpacity(0.1),
@@ -1771,7 +1766,7 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                     IconButton(
                       onPressed: () => Navigator.pop(context),
                       icon:
-                          const Icon(Icons.arrow_back_ios, color: Colors.white),
+                          Icon(Icons.arrow_back_ios, color: scheme.onPrimary),
                     ),
                     Expanded(
                       child: Text(
@@ -1780,8 +1775,8 @@ class _AttendanceScreenState extends State<AttendanceScreen>
                                 'register_attendance_title', lang)
                             : Translations.getText(
                                 'register_departure_title', lang),
-                        style: const TextStyle(
-                          color: Colors.white,
+                        style: TextStyle(
+                          color: scheme.onPrimary,
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),

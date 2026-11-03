@@ -6,6 +6,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   flutter_webrtc
   livekit_client
   open_file_linux
+  printing
   url_launcher_linux
 )
 

@@ -29,6 +29,9 @@ import 'shift_info_screen.dart';
 import 'salary_details_screen.dart';
 import 'walkie_talkie_screen.dart';
 import 'task_creator_screen.dart';
+import 'employee_mobile_devices_screen.dart';
+import 'attendance_reports_screen.dart';
+import 'attendance_processing_screen.dart';
 import '../widgets/responsive_center.dart';
 import '../widgets/ads_slider.dart';
 import '../widgets/app_notice_banner.dart';
@@ -1590,6 +1593,48 @@ class _HomeScreenState extends State<HomeScreen> {
                 _loadAllData();
               },
             ),
+          if (widget.employeeData?.canManageUsers == true)
+            _buildActionCard(
+              title: Translations.getText('employee_mobile_devices_title', lang),
+              icon: Icons.phonelink_setup_rounded,
+              color: scheme.secondary,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => EmployeeMobileDevicesScreen(
+                    clientId: widget.employeeData!.clientID,
+                  ),
+                ),
+              ),
+            ),
+          if (widget.employeeData?.canManageUsers == true)
+            _buildActionCard(
+              title: Translations.getText('attendance_reports_title', lang),
+              icon: Icons.bar_chart_rounded,
+              color: scheme.secondary,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AttendanceReportsScreen(
+                    clientId: widget.employeeData!.clientID,
+                  ),
+                ),
+              ),
+            ),
+          if (widget.employeeData?.canManageUsers == true)
+            _buildActionCard(
+              title: Translations.getText('attendance_processing_title', lang),
+              icon: Icons.auto_fix_high_rounded,
+              color: scheme.secondary,
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => AttendanceProcessingScreen(
+                    clientId: widget.employeeData!.clientID,
+                  ),
+                ),
+              ),
+            ),
           if (_hasTaskCreatorAccess)
             _buildActionCard(
               title: Translations.getText('task_creator_title', lang),
@@ -1727,7 +1772,6 @@ class _HomeScreenState extends State<HomeScreen> {
     final daysInMonth = DateUtils.getDaysInMonth(month.year, month.month);
     final startOffset = _weekdayIndexSundayFirst(firstOfMonth);
     final now = DateTime.now();
-    final isRtl = Directionality.of(context) == ui.TextDirection.rtl;
 
     String monthKey(int m) {
       const keys = [
@@ -1820,9 +1864,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           _reloadCompanyHolidaysForMonth();
                         },
                         icon: Icon(
-                          isRtl
-                              ? Icons.chevron_right_rounded
-                              : Icons.chevron_left_rounded,
+                          Icons.chevron_left_rounded,
                         ),
                         style: IconButton.styleFrom(
                           minimumSize: const Size(40, 40),
@@ -1851,9 +1893,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           _reloadCompanyHolidaysForMonth();
                         },
                         icon: Icon(
-                          isRtl
-                              ? Icons.chevron_left_rounded
-                              : Icons.chevron_right_rounded,
+                          Icons.chevron_right_rounded,
                         ),
                         style: IconButton.styleFrom(
                           minimumSize: const Size(40, 40),
@@ -2771,7 +2811,6 @@ class _ActionCardWidgetState extends State<_ActionCardWidget> {
     final pressScale = _isPressed ? 0.99 : (1.0 + 0.008 * hoverT);
     final lift = _isPressed ? -1.0 : (-3.0 * hoverT);
     final base = widget.scheme.surface;
-    final isRtl = Directionality.of(context) == ui.TextDirection.rtl;
     final iconBg = _iconBackgroundColor();
     final iconFg = _iconForegroundColor();
     return MouseRegion(
@@ -2851,23 +2890,17 @@ class _ActionCardWidgetState extends State<_ActionCardWidget> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: ScaleDownText(
+                          child: Text(
                             widget.title,
-                            style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                            maxLines: 2,
+                            softWrap: true,
+                            overflow: TextOverflow.visible,
+                            style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w800,
                                   height: 1.15,
                                   color: widget.scheme.onSurface,
                                 ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          isRtl
-                              ? Icons.chevron_left_rounded
-                              : Icons.chevron_right_rounded,
-                          color:
-                              widget.scheme.onSurfaceVariant.withValues(alpha: 0.7),
-                          size: 22,
                         ),
                       ],
                     ),

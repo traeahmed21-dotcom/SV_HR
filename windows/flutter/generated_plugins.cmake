@@ -9,6 +9,7 @@ list(APPEND FLUTTER_PLUGIN_LIST
   livekit_client
   local_auth_windows
   permission_handler_windows
+  printing
   url_launcher_windows
 )
 
