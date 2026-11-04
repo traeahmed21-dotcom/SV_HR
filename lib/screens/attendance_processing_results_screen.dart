@@ -5,6 +5,7 @@ import '../services/report_export_service.dart';
 import '../services/translations.dart';
 import '../widgets/custom_card.dart';
 import '../widgets/scale_down_text.dart';
+import '../widgets/sticky_data_table.dart';
 
 class AttendanceProcessingResultsScreen extends StatelessWidget {
   final String subtitle;
@@ -358,19 +359,34 @@ class AttendanceProcessingResultsScreen extends StatelessWidget {
                       ),
                     ],
                   )
-                : SingleChildScrollView(
+                : Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        headingRowColor: WidgetStatePropertyAll(
-                          scheme.surfaceContainerHighest,
-                        ),
-                        dataRowMinHeight: 48,
-                        dataRowMaxHeight: 56,
-                        columnSpacing: 18,
-                        columns: headers.map((h) => _col(context, h)).toList(),
-                        rows: rows.map((r) {
+                    child: Builder(
+                      builder: (context) {
+                        final columns =
+                            headers.map((h) => _col(context, h)).toList();
+                        final widths = List<double>.generate(headers.length, (i) {
+                          final header = headers[i].trim().toLowerCase();
+                          final align =
+                              i < aligns.length ? aligns[i] : TextAlign.start;
+
+                          if (header.contains('تفاصيل') ||
+                              header.contains('details')) {
+                            return 240;
+                          }
+                          if (header.contains('اسم') ||
+                              header.contains('name')) {
+                            return 190;
+                          }
+                          if (header.contains('القسم') ||
+                              header.contains('department')) {
+                            return 170;
+                          }
+                          if (align == TextAlign.center) return 120;
+                          return 150;
+                        });
+
+                        final tableRows = rows.map((r) {
                           final statusValue = overallStatusIndex >= 0 &&
                                   overallStatusIndex < r.length
                               ? r[overallStatusIndex]
@@ -452,8 +468,20 @@ class AttendanceProcessingResultsScreen extends StatelessWidget {
                               },
                             ),
                           );
-                        }).toList(),
-                      ),
+                        }).toList();
+
+                        return StickyDataTable(
+                          headingRowColor: WidgetStatePropertyAll(
+                            scheme.surfaceContainerHighest,
+                          ),
+                          dataRowMinHeight: 48,
+                          dataRowMaxHeight: 56,
+                          columnSpacing: 18,
+                          columnWidths: widths,
+                          columns: columns,
+                          rows: tableRows,
+                        );
+                      },
                     ),
                   ),
           ),

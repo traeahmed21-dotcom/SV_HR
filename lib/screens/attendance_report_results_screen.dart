@@ -6,6 +6,7 @@ import '../services/report_export_service.dart';
 import '../services/translations.dart';
 import '../widgets/custom_card.dart';
 import '../widgets/scale_down_text.dart';
+import '../widgets/sticky_data_table.dart';
 
 class AttendanceReportResultsScreen extends StatelessWidget {
   final DateTime fromDate;
@@ -661,18 +662,11 @@ class AttendanceReportResultsScreen extends StatelessWidget {
                       ),
                     ],
                   )
-                : SingleChildScrollView(
+                : Padding(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                    child: SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
-                      child: DataTable(
-                        headingRowColor: WidgetStatePropertyAll(
-                          scheme.surfaceContainerHighest,
-                        ),
-                        dataRowMinHeight: 48,
-                        dataRowMaxHeight: 56,
-                        columnSpacing: 18,
-                        columns: [
+                    child: Builder(
+                      builder: (context) {
+                        final columns = <DataColumn>[
                           _col(context, 'col_date'),
                           _col(context, 'col_day'),
                           _col(context, 'col_day_type'),
@@ -689,37 +683,108 @@ class AttendanceReportResultsScreen extends StatelessWidget {
                           _col(context, 'col_early_leave_minutes'),
                           _col(context, 'col_notes'),
                           _col(context, 'col_gps'),
-                        ],
-                        rows: rows.map((row) {
-                          final status = (row['AttendanceStatus'] ?? '').toString();
-                          final dayWorkStatus = (row['DayWorkStatus'] ?? '').toString();
+                        ];
+                        const widths = <double>[
+                          110,
+                          120,
+                          140,
+                          190,
+                          160,
+                          110,
+                          110,
+                          110,
+                          110,
+                          120,
+                          120,
+                          170,
+                          130,
+                          150,
+                          240,
+                          90,
+                        ];
+                        final tableRows = rows.map((row) {
+                          final status =
+                              (row['AttendanceStatus'] ?? '').toString();
+                          final dayWorkStatus =
+                              (row['DayWorkStatus'] ?? '').toString();
                           return DataRow(
-                            color: WidgetStatePropertyAll(_rowTint(context, status)),
+                            color: WidgetStatePropertyAll(
+                              _rowTint(context, status),
+                            ),
                             cells: [
-                              _cell(context, (row['AttendanceDate'] ?? '').toString()),
-                              _dayNameCell(context, (row['DayName'] ?? '').toString()),
+                              _cell(context,
+                                  (row['AttendanceDate'] ?? '').toString()),
+                              _dayNameCell(
+                                  context, (row['DayName'] ?? '').toString()),
                               _dayTypeCell(
                                 context,
                                 dayWorkStatus: dayWorkStatus,
                                 attendanceStatus: status,
                               ),
-                              _cell(context, (row['EmployeeName'] ?? '').toString()),
-                              _cell(context, (row['ShiftName'] ?? '').toString()),
-                              _cell(context, (row['Shift1FirstPunchIn'] ?? '').toString(), align: TextAlign.center),
-                              _cell(context, (row['Shift1LastPunchOut'] ?? '').toString(), align: TextAlign.center),
-                              _cell(context, (row['Shift2FirstPunchIn'] ?? '').toString(), align: TextAlign.center),
-                              _cell(context, (row['Shift2LastPunchOut'] ?? '').toString(), align: TextAlign.center),
-                              _cell(context, (row['TotalWorkHours'] ?? '').toString(), align: TextAlign.center),
-                              _cell(context, (row['OvertimeHours'] ?? '').toString(), align: TextAlign.center),
+                              _cell(context,
+                                  (row['EmployeeName'] ?? '').toString()),
+                              _cell(
+                                  context, (row['ShiftName'] ?? '').toString()),
+                              _cell(
+                                context,
+                                (row['Shift1FirstPunchIn'] ?? '').toString(),
+                                align: TextAlign.center,
+                              ),
+                              _cell(
+                                context,
+                                (row['Shift1LastPunchOut'] ?? '').toString(),
+                                align: TextAlign.center,
+                              ),
+                              _cell(
+                                context,
+                                (row['Shift2FirstPunchIn'] ?? '').toString(),
+                                align: TextAlign.center,
+                              ),
+                              _cell(
+                                context,
+                                (row['Shift2LastPunchOut'] ?? '').toString(),
+                                align: TextAlign.center,
+                              ),
+                              _cell(
+                                context,
+                                (row['TotalWorkHours'] ?? '').toString(),
+                                align: TextAlign.center,
+                              ),
+                              _cell(
+                                context,
+                                (row['OvertimeHours'] ?? '').toString(),
+                                align: TextAlign.center,
+                              ),
                               _statusCell(context, status),
-                              _cell(context, (row['LateMinutes'] ?? '').toString(), align: TextAlign.center),
-                              _cell(context, (row['EarlyLeaveMinutes'] ?? '').toString(), align: TextAlign.center),
-                              _cell(context, (row['ExceptionNotes'] ?? '').toString()),
+                              _cell(
+                                context,
+                                (row['LateMinutes'] ?? '').toString(),
+                                align: TextAlign.center,
+                              ),
+                              _cell(
+                                context,
+                                (row['EarlyLeaveMinutes'] ?? '').toString(),
+                                align: TextAlign.center,
+                              ),
+                              _cell(context,
+                                  (row['ExceptionNotes'] ?? '').toString()),
                               _gpsCell(context, row),
                             ],
                           );
-                        }).toList(),
-                      ),
+                        }).toList();
+
+                        return StickyDataTable(
+                          headingRowColor: WidgetStatePropertyAll(
+                            scheme.surfaceContainerHighest,
+                          ),
+                          dataRowMinHeight: 48,
+                          dataRowMaxHeight: 56,
+                          columnSpacing: 18,
+                          columnWidths: widths,
+                          columns: columns,
+                          rows: tableRows,
+                        );
+                      },
                     ),
                   ),
           ),
