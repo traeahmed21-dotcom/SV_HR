@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/api_service.dart';
 import '../services/language_service.dart';
-import '../services/report_export_service.dart';
 import '../services/translations.dart';
 import '../widgets/custom_card.dart';
 import '../widgets/scale_down_text.dart';
+import 'attendance_processing_results_screen.dart';
 
 class AttendanceProcessingScreen extends StatefulWidget {
   final int clientId;
@@ -158,6 +158,30 @@ class _AttendanceProcessingScreenState extends State<AttendanceProcessingScreen>
                 : _t(context, 'unexpected_error'));
         _loading = false;
       });
+      if (ok) {
+        final cols = _visibleColumns;
+        final headers = cols.map((c) => _t(context, c.labelKey)).toList(growable: false);
+        final aligns = cols.map((c) => c.align).toList(growable: false);
+        final outRows = _rows
+            .map(
+              (r) => cols.map((c) => _v(r, c.key)).toList(growable: false),
+            )
+            .toList(growable: false);
+
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => AttendanceProcessingResultsScreen(
+                subtitle: '${_formatDate(_fromDate)} → ${_formatDate(_toDate)}',
+                headers: headers,
+                aligns: aligns,
+                rows: outRows,
+              ),
+            ),
+          );
+        });
+      }
     } catch (_) {
       if (!mounted) return;
       setState(() {
@@ -165,29 +189,6 @@ class _AttendanceProcessingScreenState extends State<AttendanceProcessingScreen>
         _errorMessage = _t(context, 'unexpected_error');
       });
     }
-  }
-
-  DataColumn _col(BuildContext context, String key) {
-    return DataColumn(
-      label: ScaleDownText(
-        _t(context, key),
-        style: Theme.of(context).textTheme.labelMedium?.copyWith(
-              fontWeight: FontWeight.w900,
-            ),
-      ),
-    );
-  }
-
-  DataCell _cell(BuildContext context, String value, {TextAlign? align}) {
-    return DataCell(
-      ScaleDownText(
-        value,
-        textAlign: align ?? TextAlign.start,
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-      ),
-    );
   }
 
   String _v(Map<String, dynamic> row, String key) =>
@@ -263,39 +264,6 @@ class _AttendanceProcessingScreenState extends State<AttendanceProcessingScreen>
     );
   }
 
-  Future<void> _exportExcel() async {
-    if (_rows.isEmpty) return;
-    final cols = _visibleColumns;
-    final headers = cols.map((c) => _t(context, c.labelKey)).toList();
-    final rows = _rows
-        .map((r) => cols.map((c) => _v(r, c.key)).toList(growable: false))
-        .toList(growable: false);
-
-    await ReportExportService.exportExcelCsv(
-      fileBaseName: 'AttendanceProcessing_${DateTime.now().millisecondsSinceEpoch}',
-      headers: headers,
-      rows: rows,
-    );
-  }
-
-  Future<void> _exportPdf() async {
-    if (_rows.isEmpty) return;
-    final cols = _visibleColumns;
-    final headers = cols.map((c) => _t(context, c.labelKey)).toList();
-    final rows = _rows
-        .map((r) => cols.map((c) => _v(r, c.key)).toList(growable: false))
-        .toList(growable: false);
-
-    await ReportExportService.exportPdfTable(
-      context: context,
-      fileBaseName: 'AttendanceProcessing_${DateTime.now().millisecondsSinceEpoch}',
-      title: _t(context, 'attendance_processing_title'),
-      subtitle: '${_formatDate(_fromDate)} → ${_formatDate(_toDate)}',
-      headers: headers,
-      rows: rows,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
@@ -307,26 +275,49 @@ class _AttendanceProcessingScreenState extends State<AttendanceProcessingScreen>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: _FilterField(
-                  label: _t(context, 'from_date'),
-                  value: _formatDate(_fromDate),
-                  icon: Icons.calendar_month_rounded,
-                  onTap: () => _pickDate(isFrom: true),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _FilterField(
-                  label: _t(context, 'to_date'),
-                  value: _formatDate(_toDate),
-                  icon: Icons.calendar_month_rounded,
-                  onTap: () => _pickDate(isFrom: false),
-                ),
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, c) {
+              if (c.maxWidth < 380) {
+                return Column(
+                  children: [
+                    _FilterField(
+                      label: _t(context, 'from_date'),
+                      value: _formatDate(_fromDate),
+                      icon: Icons.calendar_month_rounded,
+                      onTap: () => _pickDate(isFrom: true),
+                    ),
+                    const SizedBox(height: 10),
+                    _FilterField(
+                      label: _t(context, 'to_date'),
+                      value: _formatDate(_toDate),
+                      icon: Icons.calendar_month_rounded,
+                      onTap: () => _pickDate(isFrom: false),
+                    ),
+                  ],
+                );
+              }
+              return Row(
+                children: [
+                  Expanded(
+                    child: _FilterField(
+                      label: _t(context, 'from_date'),
+                      value: _formatDate(_fromDate),
+                      icon: Icons.calendar_month_rounded,
+                      onTap: () => _pickDate(isFrom: true),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: _FilterField(
+                      label: _t(context, 'to_date'),
+                      value: _formatDate(_toDate),
+                      icon: Icons.calendar_month_rounded,
+                      onTap: () => _pickDate(isFrom: false),
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
           const SizedBox(height: 10),
           DropdownButtonFormField<Map<String, dynamic>>(
@@ -386,129 +377,57 @@ class _AttendanceProcessingScreenState extends State<AttendanceProcessingScreen>
             ),
           ),
           const SizedBox(height: 12),
-          Row(
-            children: [
-              OutlinedButton(
-                onPressed: _rows.isEmpty ? null : _exportPdf,
-                child: Text(_t(context, 'pdf')),
-              ),
-              const SizedBox(width: 10),
-              OutlinedButton(
-                onPressed: _rows.isEmpty ? null : _exportExcel,
-                child: Text(_t(context, 'excel')),
-              ),
-              const SizedBox(width: 10),
-              IconButton(
-                onPressed: _openColumnsSheet,
-                tooltip: '',
-                icon: const Icon(Icons.view_column_rounded),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: FilledButton.icon(
-                  onPressed: _loading ? null : _process,
-                  icon: _loading
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.auto_fix_high_rounded),
-                  label: Text(_t(context, 'process_data')),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
+          LayoutBuilder(
+            builder: (context, c) {
+              final processBtn = FilledButton.icon(
+                onPressed: _loading ? null : _process,
+                icon: _loading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.auto_fix_high_rounded),
+                label: Text(_t(context, 'process_data')),
+              );
 
-    final header = Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-            decoration: BoxDecoration(
-              color: scheme.surfaceContainerHighest,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: ScaleDownText(
-              '${_t(context, 'total')}: ${_rows.length}',
-              style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                    color: scheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w800,
+              if (c.maxWidth < 420) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        IconButton(
+                          onPressed: _openColumnsSheet,
+                          tooltip: '',
+                          icon: const Icon(Icons.view_column_rounded),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    SizedBox(width: double.infinity, child: processBtn),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  IconButton(
+                    onPressed: _openColumnsSheet,
+                    tooltip: '',
+                    icon: const Icon(Icons.view_column_rounded),
                   ),
-            ),
+                  const SizedBox(width: 10),
+                  Expanded(child: processBtn),
+                ],
+              );
+            },
           ),
         ],
       ),
     );
-
-    Widget body;
-    if (_rows.isEmpty) {
-      body = ListView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        children: [
-          const SizedBox(height: 56),
-          Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.table_chart_rounded,
-                  size: 44,
-                  color: scheme.onSurfaceVariant,
-                ),
-                const SizedBox(height: 12),
-                ScaleDownText(
-                  _errorMessage?.trim().isNotEmpty == true
-                      ? _errorMessage!
-                      : _t(context, 'report_empty'),
-                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                      ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      );
-    } else {
-      final visibleCols = _visibleColumns;
-      final columns = visibleCols.map((c) => _col(context, c.labelKey)).toList();
-
-      final rows = _rows.map((r) {
-        return DataRow(
-          cells: visibleCols
-              .map(
-                (c) => _cell(
-                  context,
-                  _v(r, c.key),
-                  align: c.align,
-                ),
-              )
-              .toList(),
-        );
-      }).toList();
-
-      body = SingleChildScrollView(
-        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: DataTable(
-            headingRowColor: WidgetStatePropertyAll(
-              scheme.surfaceContainerHighest,
-            ),
-            dataRowMinHeight: 48,
-            dataRowMaxHeight: 56,
-            columnSpacing: 18,
-            columns: columns,
-            rows: rows,
-          ),
-        ),
-      );
-    }
 
     return Scaffold(
       appBar: AppBar(
@@ -520,8 +439,36 @@ class _AttendanceProcessingScreenState extends State<AttendanceProcessingScreen>
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: filtersCard,
           ),
-          header,
-          Expanded(child: body),
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              children: [
+                const SizedBox(height: 56),
+                Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.table_chart_rounded,
+                        size: 44,
+                        color: scheme.onSurfaceVariant,
+                      ),
+                      const SizedBox(height: 12),
+                      ScaleDownText(
+                        _errorMessage?.trim().isNotEmpty == true
+                            ? _errorMessage!
+                            : 'قم بتحديد الفلاتر ثم اضغط "${_t(context, 'process_data')}" وسيتم عرض النتائج في صفحة مستقلة.',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                              color: scheme.onSurfaceVariant,
+                            ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

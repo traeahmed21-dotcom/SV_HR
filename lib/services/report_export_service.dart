@@ -26,7 +26,10 @@ class ReportExportService {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$fileBaseName.csv');
     await file.writeAsString('\uFEFF$csv', encoding: utf8, flush: true);
-    await OpenFile.open(file.path);
+    final result = await OpenFile.open(file.path);
+    if (result.type != ResultType.done) {
+      throw Exception(result.message);
+    }
   }
 
   static Future<void> exportPdfTable({
@@ -44,42 +47,70 @@ class ReportExportService {
     final overlay = Overlay.of(context);
     final doc = pw.Document();
 
-    final maxRowsPerPage = 18;
+    final maxRowsPerPage = 12;
     final chunks = <List<List<String>>>[];
     for (var i = 0; i < rows.length; i += maxRowsPerPage) {
       chunks.add(rows.sublist(i, (i + maxRowsPerPage).clamp(0, rows.length)));
     }
 
-    for (var pageIndex = 0; pageIndex < chunks.length; pageIndex++) {
-      final chunk = chunks[pageIndex];
-      final widget = _buildSnapshotPage(
-        theme: theme,
-        title: pageIndex == 0 ? title : null,
-        subtitle: pageIndex == 0 ? subtitle : null,
-        headers: headers,
-        rows: chunk,
-      );
+    const maxColsPerPage = 8;
+    final colChunks = <List<int>>[];
+    for (var c = 0; c < headers.length; c += maxColsPerPage) {
+      final end = (c + maxColsPerPage).clamp(0, headers.length);
+      colChunks.add(List<int>.generate(end - c, (i) => c + i));
+    }
 
-      final png = await _captureWidgetPng(
-        overlay: overlay,
-        theme: theme,
-        mediaQuery: mediaQuery,
-        child: widget,
-        logicalSize: const Size(1400, 900),
-        isRtl: isRtl,
-      );
+    for (var rowPage = 0; rowPage < chunks.length; rowPage++) {
+      final chunk = chunks[rowPage];
+      final rowFrom = rowPage * maxRowsPerPage + 1;
+      final rowTo = rowFrom + chunk.length - 1;
 
-      doc.addPage(
-        pw.Page(
-          pageFormat: PdfPageFormat.a4.landscape,
-          build: (_) => pw.Center(
-            child: pw.Image(
-              pw.MemoryImage(png),
-              fit: pw.BoxFit.contain,
+      for (var colPage = 0; colPage < colChunks.length; colPage++) {
+        final colIdx = colChunks[colPage];
+        final h = colIdx.map((i) => headers[i]).toList(growable: false);
+        final r = chunk
+            .map((row) => colIdx.map((i) => row[i]).toList(growable: false))
+            .toList(growable: false);
+
+        final colFrom = colIdx.first + 1;
+        final colTo = colIdx.last + 1;
+        final sub = subtitle == null || subtitle.trim().isEmpty
+            ? 'الأعمدة: $colFrom-$colTo | الصفوف: $rowFrom-$rowTo'
+            : '$subtitle | الأعمدة: $colFrom-$colTo | الصفوف: $rowFrom-$rowTo';
+
+        final widget = _buildSnapshotPage(
+          theme: theme,
+          title: rowPage == 0 && colPage == 0 ? title : null,
+          subtitle: sub,
+          headers: h,
+          rows: r,
+        );
+
+        final width = (h.length * 240).clamp(1400, 2800).toDouble();
+        final height = (520 + (r.length * 86)).clamp(1000, 2200).toDouble();
+
+        final png = await _captureWidgetPng(
+          overlay: overlay,
+          theme: theme,
+          mediaQuery: mediaQuery,
+          child: widget,
+          logicalSize: Size(width, height),
+          isRtl: isRtl,
+          pixelRatio: 2,
+        );
+
+        doc.addPage(
+          pw.Page(
+            pageFormat: PdfPageFormat.a4.landscape,
+            build: (_) => pw.Center(
+              child: pw.Image(
+                pw.MemoryImage(png),
+                fit: pw.BoxFit.contain,
+              ),
             ),
           ),
-        ),
-      );
+        );
+      }
     }
 
     final bytes = await doc.save();
@@ -200,31 +231,34 @@ class ReportExportService {
     required Widget child,
     required Size logicalSize,
     required bool isRtl,
+    required double pixelRatio,
   }) {
     final completer = Completer<Uint8List>();
     final repaintKey = GlobalKey();
     late final OverlayEntry entry;
     entry = OverlayEntry(
       builder: (_) {
-        return Offstage(
-          offstage: true,
-          child: MediaQuery(
-            data: mediaQuery.copyWith(
-              textScaler: const TextScaler.linear(1),
-            ),
-            child: Theme(
-              data: theme,
-              child: Directionality(
-                textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
-                child: Center(
-                  child: Material(
-                    color: Colors.transparent,
-                    child: RepaintBoundary(
-                      key: repaintKey,
-                      child: SizedBox(
-                        width: logicalSize.width,
-                        height: logicalSize.height,
-                        child: child,
+        return IgnorePointer(
+          child: Opacity(
+            opacity: 0.01,
+            child: MediaQuery(
+              data: mediaQuery.copyWith(
+                textScaler: const TextScaler.linear(1),
+              ),
+              child: Theme(
+                data: theme,
+                child: Directionality(
+                  textDirection: isRtl ? TextDirection.rtl : TextDirection.ltr,
+                  child: Center(
+                    child: Material(
+                      color: Colors.transparent,
+                      child: RepaintBoundary(
+                        key: repaintKey,
+                        child: SizedBox(
+                          width: logicalSize.width,
+                          height: logicalSize.height,
+                          child: child,
+                        ),
                       ),
                     ),
                   ),
@@ -253,19 +287,26 @@ class ReportExportService {
         return;
       }
 
-      boundary.toImage(pixelRatio: 3).then((image) {
-        return image.toByteData(format: ui.ImageByteFormat.png);
-      }).then((byteData) {
-        entry.remove();
-        if (byteData == null) {
-          completer.completeError(Exception('فشل تحويل التقرير لصورة'));
-          return;
+      () async {
+        try {
+          await WidgetsBinding.instance.endOfFrame;
+          final image = await boundary
+              .toImage(pixelRatio: pixelRatio)
+              .timeout(const Duration(seconds: 12));
+          final byteData = await image
+              .toByteData(format: ui.ImageByteFormat.png)
+              .timeout(const Duration(seconds: 12));
+          entry.remove();
+          if (byteData == null) {
+            completer.completeError(Exception('فشل تحويل التقرير لصورة'));
+            return;
+          }
+          completer.complete(byteData.buffer.asUint8List());
+        } catch (e) {
+          entry.remove();
+          completer.completeError(e);
         }
-        completer.complete(byteData.buffer.asUint8List());
-      }).catchError((e) {
-        entry.remove();
-        completer.completeError(e);
-      });
+      }();
     });
 
     return completer.future;
@@ -279,6 +320,9 @@ class ReportExportService {
     final dir = await getTemporaryDirectory();
     final file = File('${dir.path}/$fileBaseName$extension');
     await file.writeAsBytes(bytes, flush: true);
-    await OpenFile.open(file.path);
+    final result = await OpenFile.open(file.path);
+    if (result.type != ResultType.done) {
+      throw Exception(result.message);
+    }
   }
 }

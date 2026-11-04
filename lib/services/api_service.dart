@@ -3092,6 +3092,43 @@ class ApiService {
     }
   }
 
+  static Future<List<ChatConversationMember>> getChatConversationMembers(
+    int clientId,
+    int employeeId,
+    int conversationId,
+  ) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${ApiConfig.baseUrl}/api/$clientId/chat/conversations/$conversationId/members/$employeeId'),
+        headers: {'Accept': 'application/json'},
+      ).timeout(const Duration(seconds: 30));
+
+      if (response.statusCode != 200) {
+        throw Exception(
+            'Chat conversation members API failed: ${response.statusCode}');
+      }
+
+      final decoded = json.decode(response.body);
+      final data = decoded is Map<String, dynamic>
+          ? (decoded['Data'] ?? decoded['data'] ?? [])
+          : [];
+
+      if (data is List) {
+        return data
+            .whereType<Map>()
+            .map((item) => ChatConversationMember.fromJson(
+                Map<String, dynamic>.from(item.cast<String, dynamic>())))
+            .toList();
+      }
+
+      return [];
+    } catch (e) {
+      _log('💥 خطأ في جلب أعضاء مجموعة الدردشة: $e');
+      return [];
+    }
+  }
+
   static Future<bool> sendChatMessage(
     int clientId,
     int employeeId,

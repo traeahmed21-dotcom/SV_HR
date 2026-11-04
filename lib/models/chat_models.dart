@@ -152,3 +152,41 @@ class ChatAttachmentModel {
     );
   }
 }
+
+class ChatConversationMember {
+  final String participantType;
+  final String participantKey;
+  final String displayName;
+  final int? employeeId;
+  final bool isYou;
+
+  const ChatConversationMember({
+    required this.participantType,
+    required this.participantKey,
+    required this.displayName,
+    required this.employeeId,
+    required this.isYou,
+  });
+
+  factory ChatConversationMember.fromJson(Map<String, dynamic> json) {
+    int? parseNullableInt(dynamic value) {
+      if (value == null) return null;
+      if (value is int) return value;
+      return int.tryParse('$value');
+    }
+
+    bool parseBool(dynamic value) {
+      if (value is bool) return value;
+      final normalized = '${value ?? ''}'.toLowerCase();
+      return normalized == 'true' || normalized == '1';
+    }
+
+    return ChatConversationMember(
+      participantType: '${json['ParticipantType'] ?? json['participantType'] ?? ''}',
+      participantKey: '${json['ParticipantKey'] ?? json['participantKey'] ?? ''}',
+      displayName: '${json['DisplayName'] ?? json['displayName'] ?? ''}',
+      employeeId: parseNullableInt(json['EmployeeID'] ?? json['employeeId']),
+      isYou: parseBool(json['IsYou'] ?? json['isYou']),
+    );
+  }
+}

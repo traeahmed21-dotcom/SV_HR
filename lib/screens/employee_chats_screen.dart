@@ -11,6 +11,7 @@ import '../services/api_service.dart';
 import '../services/language_service.dart';
 import '../services/notification_service.dart';
 import '../services/translations.dart';
+import 'chat_group_info_screen.dart';
 
 class EmployeeChatsScreen extends StatefulWidget {
   final int clientId;
@@ -390,6 +391,10 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
   final FocusNode _focusNode = FocusNode();
 
   ChatConversationInfo? _conversation;
+  List<ChatConversationMember> _members = [];
+  bool _isMembersLoading = false;
+  int? _membersLoadedForConversationId;
+  int? _membersLoadedForMemberCount;
   List<ChatMessageModel> _messages = [];
   List<PlatformFile> _selectedAttachments = [];
   bool _isLoading = true;
@@ -410,6 +415,77 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     _scrollController.dispose();
     _focusNode.dispose();
     super.dispose();
+  }
+
+  Future<void> _loadMembersIfNeeded({bool force = false}) async {
+    final conversation = _conversation;
+    if (conversation == null || !conversation.isGroup) return;
+    if (_isMembersLoading) return;
+
+    final shouldFetch = force ||
+        _membersLoadedForConversationId != conversation.conversationId ||
+        _membersLoadedForMemberCount != conversation.memberCount ||
+        _members.isEmpty;
+
+    if (!shouldFetch) return;
+    if (!mounted) return;
+
+    setState(() => _isMembersLoading = true);
+    final members = await ApiService.getChatConversationMembers(
+      widget.clientId,
+      widget.employeeId,
+      widget.conversationId,
+    );
+    if (!mounted) return;
+
+    setState(() {
+      _members = members;
+      _membersLoadedForConversationId = conversation.conversationId;
+      _membersLoadedForMemberCount = conversation.memberCount;
+      _isMembersLoading = false;
+    });
+  }
+
+  String _buildGroupMembersPreview(List<ChatConversationMember> members) {
+    final names = members
+        .map((m) => m.displayName.trim())
+        .where((name) => name.isNotEmpty)
+        .toList();
+
+    if (names.isEmpty) return '';
+    if (names.length <= 3) return names.join('، ');
+    return '${names[0]}، ${names[1]} +${names.length - 2}';
+  }
+
+  String _appBarSubtitle(String lang) {
+    final conversation = _conversation;
+    if (conversation == null) return '';
+
+    if (!conversation.isGroup) {
+      return Translations.getText('chat_direct_label', lang);
+    }
+
+    final membersPreview = _buildGroupMembersPreview(_members);
+    if (membersPreview.isNotEmpty) return membersPreview;
+
+    return '${Translations.getText('chat_group_label', lang)} - ${conversation.memberCount} ${Translations.getText('chat_members', lang)}';
+  }
+
+  void _openGroupInfo() {
+    final conversation = _conversation;
+    if (conversation == null || !conversation.isGroup) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatGroupInfoScreen(
+          clientId: widget.clientId,
+          employeeId: widget.employeeId,
+          conversationId: widget.conversationId,
+          groupTitle: conversation.title,
+          memberCount: conversation.memberCount,
+          initialMembers: _members,
+        ),
+      ),
+    );
   }
 
   Future<void> _loadMessages({bool initial = false}) async {
@@ -435,6 +511,7 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
         _messages = payload.messages;
         _isLoading = false;
       });
+      unawaited(_loadMembersIfNeeded());
 
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (_scrollController.hasClients) {
@@ -641,24 +718,33 @@ class _ChatConversationScreenState extends State<ChatConversationScreen> {
     final languageService = context.watch<LanguageService>();
     final lang = languageService.currentLocale.languageCode;
     final scheme = Theme.of(context).colorScheme;
+    final canOpenGroupInfo = _conversation?.isGroup == true;
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(_conversation?.title ?? widget.initialTitle),
+        title: GestureDetector(
+          behavior: HitTestBehavior.translucent,
+          onTap: canOpenGroupInfo ? _openGroupInfo : null,
+          child: Text(_conversation?.title ?? widget.initialTitle),
+        ),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(28),
           child: Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: Text(
-              _conversation == null
-                  ? ''
-                  : _conversation!.isGroup
-                      ? '${Translations.getText('chat_group_label', lang)} - ${_conversation!.memberCount} ${Translations.getText('chat_members', lang)}'
-                      : Translations.getText('chat_direct_label', lang),
-              style: TextStyle(
-                color: scheme.onPrimary.withValues(alpha: 0.85),
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
+            child: GestureDetector(
+              behavior: HitTestBehavior.translucent,
+              onTap: canOpenGroupInfo ? _openGroupInfo : null,
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Text(
+                  _appBarSubtitle(lang),
+                  maxLines: 1,
+                  style: TextStyle(
+                    color: scheme.onPrimary.withValues(alpha: 0.85),
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
               ),
             ),
           ),
